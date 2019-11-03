@@ -417,7 +417,7 @@ void PrepareBan(int client, int target, int time, const char[] reason)
 	{
 		if (g_bSBAvailable)
 		{
-			SBBanPlayer(client, target, time, "Banned");
+			SBPP_BanPlayer(client, target, time, "Banned");
 		}
 		else
 		{
@@ -431,7 +431,7 @@ void PrepareBan(int client, int target, int time, const char[] reason)
 			// avoid const-string tag mismatch
 			char banreason[255];
 			strcopy(banreason, sizeof(banreason), reason);
-			SBBanPlayer(client, target, time, banreason);
+			SBPP_BanPlayer(client, target, time, banreason);
 		}
 		else
 		{

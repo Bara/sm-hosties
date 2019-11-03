@@ -48,11 +48,11 @@ Handle g_BeerGogglesTimer = null;
 Handle g_CountdownTimer = null;
 Handle g_FarthestJumpTimer = null;
 
-Handle gH_Frwd_LR_CleanUp = null;
-Handle gH_Frwd_LR_Start = null;
-Handle gH_Frwd_LR_Process = null;
-Handle gH_Frwd_LR_StartGlobal = null;
-Handle gH_Frwd_LR_Available = null;
+PrivateForward gH_Frwd_LR_CleanUp = null;
+PrivateForward gH_Frwd_LR_Start = null;
+PrivateForward gH_Frwd_LR_Process = null;
+GlobalForward gH_Frwd_LR_StartGlobal = null;
+GlobalForward gH_Frwd_LR_Available = null;
 
 int BeamSprite = -1;
 int HaloSprite = -1;
@@ -75,86 +75,86 @@ int g_Offset_DefFOV = -1;
 int g_Offset_PunchAngle = -1; 
 int g_Offset_SecAttack = -1;
 
-Handle gH_DArray_LastRequests = null;
-Handle gH_DArray_LR_Partners = null;
-Handle gH_DArray_Beacons = null;
-Handle gH_DArray_LR_CustomNames = null;
+ArrayList gH_DArray_LastRequests = null;
+ArrayList gH_DArray_LR_Partners = null;
+ArrayList gH_DArray_Beacons = null;
+ArrayList gH_DArray_LR_CustomNames = null;
 
-Handle gH_Cvar_LR_KnifeFight_On = null;
-Handle gH_Cvar_LR_Shot4Shot_On = null;
-Handle gH_Cvar_LR_GunToss_On = null;
-Handle gH_Cvar_LR_ChickenFight_On = null;
-Handle gH_Cvar_LR_HotPotato_On = null;
-Handle gH_Cvar_LR_Dodgeball_On = null;
-Handle gH_Cvar_LR_NoScope_On = null;
-Handle gH_Cvar_LR_RockPaperScissors_On = null;
-Handle gH_Cvar_LR_Rebel_On = null;
-Handle gH_Cvar_LR_Mag4Mag_On = null;
-Handle gH_Cvar_LR_Race_On = null;
-Handle gH_Cvar_LR_RussianRoulette_On = null;
-Handle gH_Cvar_LR_JumpContest_On = null;
-Handle gH_Cvar_Announce_Delay_Enable = null;
-Handle gH_Cvar_LR_HotPotato_Mode = null;
-Handle gH_Cvar_MaxPrisonersToLR = null;
-Handle gH_Cvar_RebelAction = null;
-Handle gH_Cvar_RebelHandling = null;
-Handle gH_Cvar_SendGlobalMsgs = null;
-Handle gH_Cvar_ColorRebels = null;
-Handle gH_Cvar_LR_Enable = null;
-Handle gH_Cvar_LR_MenuTime = null;
-Handle gH_Cvar_LR_KillTimeouts = null;
-Handle gH_Cvar_ColorRebels_Red = null;
-Handle gH_Cvar_ColorRebels_Blue = null;
-Handle gH_Cvar_ColorRebels_Green = null;
-Handle gH_Cvar_LR_Beacons = null;
-Handle gH_Cvar_LR_HelpBeams = null;
-Handle gH_Cvar_LR_HelpBeams_Distance = null;
-Handle gH_Cvar_LR_Beacon_Interval = null;
-Handle gH_Cvar_RebelOnImpact = null;
-Handle gH_Cvar_LR_ChickenFight_Slay = null;
-Handle gH_Cvar_LR_ChickenFight_C_Blue = null;
-Handle gH_Cvar_LR_ChickenFight_C_Red = null;
-Handle gH_Cvar_LR_ChickenFight_C_Green = null;
-Handle gH_Cvar_LR_Dodgeball_CheatCheck = null;
-Handle gH_Cvar_LR_Dodgeball_SpawnTime = null;
-Handle gH_Cvar_LR_Dodgeball_Gravity = null;
-Handle gH_Cvar_LR_HotPotato_MaxTime = null;
-Handle gH_Cvar_LR_HotPotato_MinTime = null;
-Handle gH_Cvar_LR_HotPotato_Speed = null;
-Handle gH_Cvar_LR_NoScope_Sound = null;
-Handle gH_Cvar_LR_Sound = null;
-Handle gH_Cvar_LR_NoScope_Weapon = null;
-Handle gH_Cvar_LR_S4S_DoubleShot = null;
-Handle gH_Cvar_LR_GunToss_MarkerMode = null;
-Handle gH_Cvar_LR_GunToss_StartMode = null;
-Handle gH_Cvar_LR_GunToss_ShowMeter = null;
-Handle gH_Cvar_LR_Race_AirPoints = null;
-Handle gH_Cvar_LR_Race_NotifyCTs = null;
-Handle gH_Cvar_Announce_CT_FreeHit = null;
-Handle gH_Cvar_Announce_LR = null;
-Handle gH_Cvar_Announce_Rebel = null;
-Handle gH_Cvar_Announce_RebelDown = null;
-Handle gH_Cvar_Announce_Weapon_Attack = null;
-Handle gH_Cvar_Announce_HotPotato_Eqp = null;
-Handle gH_Cvar_Announce_Shot4Shot = null;
-Handle gH_Cvar_LR_NonContKiller_Action = null;
-Handle gH_Cvar_LR_Delay_Enable_Time = null;
-Handle gH_Cvar_LR_Damage = null;
-Handle gH_Cvar_LR_NoScope_Delay = null;
-Handle gH_Cvar_LR_ChickenFight_Rebel = null;
-Handle gH_Cvar_LR_HotPotato_Rebel = null;
-Handle gH_Cvar_LR_KnifeFight_Rebel = null;
-Handle gH_Cvar_LR_Rebel_MaxTs = null;
-Handle gH_Cvar_LR_Rebel_MinCTs = null;
-Handle gH_Cvar_LR_M4M_MagCapacity = null;
-Handle gH_Cvar_LR_KnifeFight_LowGrav = null;
-Handle gH_Cvar_LR_KnifeFight_HiSpeed = null;
-Handle gH_Cvar_LR_KnifeFight_Drunk = null;
-Handle gH_Cvar_LR_Beacon_Sound = null;
-Handle gH_Cvar_LR_AutoDisplay = null;
-Handle gH_Cvar_LR_BlockSuicide = null;
-Handle gH_Cvar_LR_VictorPoints = null;
-Handle gH_Cvar_LR_RemoveArmor = null;
+ConVar gH_Cvar_LR_KnifeFight_On = null;
+ConVar gH_Cvar_LR_Shot4Shot_On = null;
+ConVar gH_Cvar_LR_GunToss_On = null;
+ConVar gH_Cvar_LR_ChickenFight_On = null;
+ConVar gH_Cvar_LR_HotPotato_On = null;
+ConVar gH_Cvar_LR_Dodgeball_On = null;
+ConVar gH_Cvar_LR_NoScope_On = null;
+ConVar gH_Cvar_LR_RockPaperScissors_On = null;
+ConVar gH_Cvar_LR_Rebel_On = null;
+ConVar gH_Cvar_LR_Mag4Mag_On = null;
+ConVar gH_Cvar_LR_Race_On = null;
+ConVar gH_Cvar_LR_RussianRoulette_On = null;
+ConVar gH_Cvar_LR_JumpContest_On = null;
+ConVar gH_Cvar_Announce_Delay_Enable = null;
+ConVar gH_Cvar_LR_HotPotato_Mode = null;
+ConVar gH_Cvar_MaxPrisonersToLR = null;
+ConVar gH_Cvar_RebelAction = null;
+ConVar gH_Cvar_RebelHandling = null;
+ConVar gH_Cvar_SendGlobalMsgs = null;
+ConVar gH_Cvar_ColorRebels = null;
+ConVar gH_Cvar_LR_Enable = null;
+ConVar gH_Cvar_LR_MenuTime = null;
+ConVar gH_Cvar_LR_KillTimeouts = null;
+ConVar gH_Cvar_ColorRebels_Red = null;
+ConVar gH_Cvar_ColorRebels_Blue = null;
+ConVar gH_Cvar_ColorRebels_Green = null;
+ConVar gH_Cvar_LR_Beacons = null;
+ConVar gH_Cvar_LR_HelpBeams = null;
+ConVar gH_Cvar_LR_HelpBeams_Distance = null;
+ConVar gH_Cvar_LR_Beacon_Interval = null;
+ConVar gH_Cvar_RebelOnImpact = null;
+ConVar gH_Cvar_LR_ChickenFight_Slay = null;
+ConVar gH_Cvar_LR_ChickenFight_C_Blue = null;
+ConVar gH_Cvar_LR_ChickenFight_C_Red = null;
+ConVar gH_Cvar_LR_ChickenFight_C_Green = null;
+ConVar gH_Cvar_LR_Dodgeball_CheatCheck = null;
+ConVar gH_Cvar_LR_Dodgeball_SpawnTime = null;
+ConVar gH_Cvar_LR_Dodgeball_Gravity = null;
+ConVar gH_Cvar_LR_HotPotato_MaxTime = null;
+ConVar gH_Cvar_LR_HotPotato_MinTime = null;
+ConVar gH_Cvar_LR_HotPotato_Speed = null;
+ConVar gH_Cvar_LR_NoScope_Sound = null;
+ConVar gH_Cvar_LR_Sound = null;
+ConVar gH_Cvar_LR_NoScope_Weapon = null;
+ConVar gH_Cvar_LR_S4S_DoubleShot = null;
+ConVar gH_Cvar_LR_GunToss_MarkerMode = null;
+ConVar gH_Cvar_LR_GunToss_StartMode = null;
+ConVar gH_Cvar_LR_GunToss_ShowMeter = null;
+ConVar gH_Cvar_LR_Race_AirPoints = null;
+ConVar gH_Cvar_LR_Race_NotifyCTs = null;
+ConVar gH_Cvar_Announce_CT_FreeHit = null;
+ConVar gH_Cvar_Announce_LR = null;
+ConVar gH_Cvar_Announce_Rebel = null;
+ConVar gH_Cvar_Announce_RebelDown = null;
+ConVar gH_Cvar_Announce_Weapon_Attack = null;
+ConVar gH_Cvar_Announce_HotPotato_Eqp = null;
+ConVar gH_Cvar_Announce_Shot4Shot = null;
+ConVar gH_Cvar_LR_NonContKiller_Action = null;
+ConVar gH_Cvar_LR_Delay_Enable_Time = null;
+ConVar gH_Cvar_LR_Damage = null;
+ConVar gH_Cvar_LR_NoScope_Delay = null;
+ConVar gH_Cvar_LR_ChickenFight_Rebel = null;
+ConVar gH_Cvar_LR_HotPotato_Rebel = null;
+ConVar gH_Cvar_LR_KnifeFight_Rebel = null;
+ConVar gH_Cvar_LR_Rebel_MaxTs = null;
+ConVar gH_Cvar_LR_Rebel_MinCTs = null;
+ConVar gH_Cvar_LR_M4M_MagCapacity = null;
+ConVar gH_Cvar_LR_KnifeFight_LowGrav = null;
+ConVar gH_Cvar_LR_KnifeFight_HiSpeed = null;
+ConVar gH_Cvar_LR_KnifeFight_Drunk = null;
+ConVar gH_Cvar_LR_Beacon_Sound = null;
+ConVar gH_Cvar_LR_AutoDisplay = null;
+ConVar gH_Cvar_LR_BlockSuicide = null;
+ConVar gH_Cvar_LR_VictorPoints = null;
+ConVar gH_Cvar_LR_RemoveArmor = null;
 
 int g_iLastCT_FreeAttacker = -1;
 int gShadow_LR_KnifeFight_On = -1;
@@ -402,11 +402,11 @@ void LastRequest_OnPluginStart()
 	// -- block 9 -> Handle to Additional Data
 	
 	// Create forwards for custom LR plugins
-	gH_Frwd_LR_Available = CreateGlobalForward("OnAvailableLR", ET_Ignore, Param_Cell);
-	gH_Frwd_LR_CleanUp = CreateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
-	gH_Frwd_LR_Start = CreateForward(ET_Ignore, Param_Cell, Param_Cell);
-	gH_Frwd_LR_Process = CreateForward(ET_Event, Param_Cell, Param_Cell);
-	gH_Frwd_LR_StartGlobal = CreateGlobalForward("OnStartLR", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+	gH_Frwd_LR_Available = new GlobalForward("OnAvailableLR", ET_Ignore, Param_Cell);
+	gH_Frwd_LR_CleanUp = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
+	gH_Frwd_LR_Start = new PrivateForward(ET_Ignore, Param_Cell, Param_Cell);
+	gH_Frwd_LR_Process = new PrivateForward(ET_Event, Param_Cell, Param_Cell);
+	gH_Frwd_LR_StartGlobal = new GlobalForward("OnStartLR", ET_Ignore, Param_Cell, Param_Cell, Param_Cell);
 	
 	// Register cvars
 	gH_Cvar_LR_Enable = CreateConVar("sm_hosties_lr", "1", "Enable or disable Last Requests (the !lr command): 0 - disable, 1 - enable", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -2334,79 +2334,79 @@ void LastRequest_OnConfigsExecuted()
 	{
 		int iIndex = 0;
 		// Check LRs
-		gShadow_LR_KnifeFight_On = GetConVarBool(gH_Cvar_LR_KnifeFight_On);
+		gShadow_LR_KnifeFight_On = gH_Cvar_LR_KnifeFight_On.BoolValue;
 		if (gShadow_LR_KnifeFight_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_KnifeFight);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_Shot4Shot_On = GetConVarBool(gH_Cvar_LR_Shot4Shot_On);
+		gShadow_LR_Shot4Shot_On = gH_Cvar_LR_Shot4Shot_On.BoolValue;
 		if (gShadow_LR_Shot4Shot_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Shot4Shot);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_GunToss_On = GetConVarBool(gH_Cvar_LR_GunToss_On);
+		gShadow_LR_GunToss_On = gH_Cvar_LR_GunToss_On.BoolValue;
 		if (gShadow_LR_GunToss_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_GunToss);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_ChickenFight_On = GetConVarBool(gH_Cvar_LR_ChickenFight_On);
+		gShadow_LR_ChickenFight_On = gH_Cvar_LR_ChickenFight_On.BoolValue;
 		if (gShadow_LR_ChickenFight_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_ChickenFight);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_HotPotato_On = GetConVarBool(gH_Cvar_LR_HotPotato_On);
+		gShadow_LR_HotPotato_On = gH_Cvar_LR_HotPotato_On.BoolValue;
 		if (gShadow_LR_HotPotato_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_HotPotato);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_Dodgeball_On = GetConVarBool(gH_Cvar_LR_Dodgeball_On);
+		gShadow_LR_Dodgeball_On = gH_Cvar_LR_Dodgeball_On.BoolValue;
 		if (gShadow_LR_Dodgeball_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Dodgeball);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_NoScope_On = GetConVarBool(gH_Cvar_LR_NoScope_On);
+		gShadow_LR_NoScope_On = gH_Cvar_LR_NoScope_On.BoolValue;
 		if (gShadow_LR_NoScope_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_NoScope);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_RockPaperScissors_On = GetConVarBool(gH_Cvar_LR_RockPaperScissors_On);
+		gShadow_LR_RockPaperScissors_On = gH_Cvar_LR_RockPaperScissors_On.BoolValue;
 		if (gShadow_LR_RockPaperScissors_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_RockPaperScissors);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_Rebel_On = GetConVarBool(gH_Cvar_LR_Rebel_On);
+		gShadow_LR_Rebel_On = gH_Cvar_LR_Rebel_On.BoolValue;
 		if (gShadow_LR_Rebel_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Rebel);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_Mag4Mag_On = GetConVarBool(gH_Cvar_LR_Mag4Mag_On);
+		gShadow_LR_Mag4Mag_On = gH_Cvar_LR_Mag4Mag_On.BoolValue;
 		if (gShadow_LR_Mag4Mag_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Mag4Mag);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_Race_On = GetConVarBool(gH_Cvar_LR_Race_On);
+		gShadow_LR_Race_On = gH_Cvar_LR_Race_On.BoolValue;
 		if (gShadow_LR_Race_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Race);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_RussianRoulette_On = GetConVarBool(gH_Cvar_LR_RussianRoulette_On);
+		gShadow_LR_RussianRoulette_On = gH_Cvar_LR_RussianRoulette_On.BoolValue;
 		if (gShadow_LR_RussianRoulette_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_RussianRoulette);
 			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
 		}
-		gShadow_LR_JumpContest_On = GetConVarBool(gH_Cvar_LR_JumpContest_On);
+		gShadow_LR_JumpContest_On = gH_Cvar_LR_JumpContest_On.BoolValue;
 		if (gShadow_LR_JumpContest_On)
 		{
 			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_JumpContest);
@@ -2417,42 +2417,42 @@ void LastRequest_OnConfigsExecuted()
 	
 	// check for -1 for backward compatibility
 	MediaType soundfile = type_Sound;
-	GetConVarString(gH_Cvar_LR_NoScope_Sound, gShadow_LR_NoScope_Sound, sizeof(gShadow_LR_NoScope_Sound));
+	gH_Cvar_LR_NoScope_Sound.GetString(gShadow_LR_NoScope_Sound, sizeof(gShadow_LR_NoScope_Sound));
 	if ((strlen(gShadow_LR_NoScope_Sound) > 0) && !StrEqual(gShadow_LR_NoScope_Sound, "-1"))
 	{		
 		CacheTheFile(gShadow_LR_NoScope_Sound, soundfile);
 	}
-	GetConVarString(gH_Cvar_LR_Sound, gShadow_LR_Sound, sizeof(gShadow_LR_Sound));
+	gH_Cvar_LR_Sound.GetString(gShadow_LR_Sound, sizeof(gShadow_LR_Sound));
 	if ((strlen(gShadow_LR_Sound) > 0) && !StrEqual(gShadow_LR_Sound, "-1"))
 	{
 		CacheTheFile(gShadow_LR_Sound, soundfile);
 	}
-	GetConVarString(gH_Cvar_LR_Beacon_Sound, gShadow_LR_Beacon_Sound, sizeof(gShadow_LR_Beacon_Sound));
+	gH_Cvar_LR_Beacon_Sound.GetString(gShadow_LR_Beacon_Sound, sizeof(gShadow_LR_Beacon_Sound));
 	if ((strlen(gShadow_LR_Beacon_Sound) > 0) && !StrEqual(gShadow_LR_Beacon_Sound, "-1"))
 	{
 		CacheTheFile(gShadow_LR_Beacon_Sound, soundfile);
 	}
 	
 	// update settings from configs
-	gShadow_LR_Enable = view_as<bool>(GetConVarInt(gH_Cvar_LR_Enable));
-	gShadow_LR_MenuTime = GetConVarInt(gH_Cvar_LR_MenuTime);
-	gShadow_LR_KillTimeouts = view_as<bool>(GetConVarInt(gH_Cvar_LR_KillTimeouts));
-	gShadow_LR_HotPotato_Mode = GetConVarInt(gH_Cvar_LR_HotPotato_Mode);
-	gShadow_SendGlobalMsgs = GetConVarInt(gH_Cvar_SendGlobalMsgs);
-	gShadow_MaxPrisonersToLR = GetConVarInt(gH_Cvar_MaxPrisonersToLR);
-	gShadow_RebelAction = GetConVarInt(gH_Cvar_RebelAction);
-	gShadow_RebelHandling = GetConVarInt(gH_Cvar_RebelHandling);
-	gShadow_ColorRebels = GetConVarInt(gH_Cvar_ColorRebels);
-	gShadow_Announce_CT_FreeHit = GetConVarInt(gH_Cvar_Announce_CT_FreeHit);
-	gShadow_Announce_LR = view_as<bool>(GetConVarInt(gH_Cvar_Announce_LR));
-	gShadow_Announce_Rebel = view_as<bool>(GetConVarInt(gH_Cvar_Announce_Rebel));
-	gShadow_Announce_RebelDown = view_as<bool>(GetConVarInt(gH_Cvar_Announce_RebelDown));
-	gShadow_Announce_Weapon_Attack = view_as<bool>(GetConVarInt(gH_Cvar_Announce_Weapon_Attack));
-	gShadow_Announce_HotPotato_Eqp = view_as<bool>(GetConVarInt(gH_Cvar_Announce_HotPotato_Eqp));
-	gShadow_LR_AutoDisplay = view_as<bool>(GetConVarInt(gH_Cvar_LR_AutoDisplay));
-	gShadow_LR_BlockSuicide = view_as<bool>(GetConVarInt(gH_Cvar_LR_BlockSuicide));
-	gShadow_LR_VictorPoints = GetConVarInt(gH_Cvar_LR_VictorPoints);
-	gShadow_LR_RemoveArmor = GetConVarInt(gH_Cvar_LR_RemoveArmor);
+	gShadow_LR_Enable = gH_Cvar_LR_Enable.BoolValue;
+	gShadow_LR_MenuTime = gH_Cvar_LR_MenuTime.IntValue;
+	gShadow_LR_KillTimeouts = gH_Cvar_LR_KillTimeouts.BoolValue;
+	gShadow_LR_HotPotato_Mode = gH_Cvar_LR_HotPotato_Mode.IntValue;
+	gShadow_SendGlobalMsgs = gH_Cvar_SendGlobalMsgs.IntValue;
+	gShadow_MaxPrisonersToLR = gH_Cvar_MaxPrisonersToLR.IntValue;
+	gShadow_RebelAction = gH_Cvar_RebelAction.IntValue;
+	gShadow_RebelHandling = gH_Cvar_RebelHandling.IntValue;
+	gShadow_ColorRebels = gH_Cvar_ColorRebels.IntValue;
+	gShadow_Announce_CT_FreeHit = gH_Cvar_Announce_CT_FreeHit.IntValue;
+	gShadow_Announce_LR = gH_Cvar_Announce_LR.BoolValue;
+	gShadow_Announce_Rebel = gH_Cvar_Announce_Rebel.BoolValue;
+	gShadow_Announce_RebelDown = gH_Cvar_Announce_RebelDown.BoolValue;
+	gShadow_Announce_Weapon_Attack = gH_Cvar_Announce_Weapon_Attack.BoolValue;
+	gShadow_Announce_HotPotato_Eqp = gH_Cvar_Announce_HotPotato_Eqp.BoolValue;
+	gShadow_LR_AutoDisplay = gH_Cvar_LR_AutoDisplay.BoolValue;
+	gShadow_LR_BlockSuicide = gH_Cvar_LR_BlockSuicide.BoolValue;
+	gShadow_LR_VictorPoints = gH_Cvar_LR_VictorPoints.IntValue;
+	gShadow_LR_RemoveArmor = gH_Cvar_LR_RemoveArmor.IntValue;
 	if (gShadow_LR_BlockSuicide && !g_bListenersAdded)
 	{
 		AddCommandListener(Suicide_Check, "kill");
@@ -2469,49 +2469,49 @@ void LastRequest_OnConfigsExecuted()
 		RemoveCommandListener(Suicide_Check, "spectate");
 		g_bListenersAdded = false;
 	}
-	gShadow_LR_Race_AirPoints = view_as<bool>(GetConVarInt(gH_Cvar_LR_Race_AirPoints));
-	gShadow_LR_Race_NotifyCTs = view_as<bool>(GetConVarInt(gH_Cvar_LR_Race_NotifyCTs));
-	gShadow_LR_Beacons = view_as<bool>(GetConVarInt(gH_Cvar_LR_Beacons));
-	gShadow_LR_HelpBeams = view_as<bool>(GetConVarInt(gH_Cvar_LR_HelpBeams));
-	gShadow_LR_HelpBeams_Distance = GetConVarFloat(gH_Cvar_LR_HelpBeams_Distance);
-	gShadow_LR_Beacon_Interval = GetConVarFloat(gH_Cvar_LR_Beacon_Interval);
-	gShadow_RebelOnImpact = view_as<bool>(GetConVarInt(gH_Cvar_RebelOnImpact));
-	gShadow_ColorRebels_Blue = GetConVarInt(gH_Cvar_ColorRebels_Blue);
-	gShadow_ColorRebels_Green = GetConVarInt(gH_Cvar_ColorRebels_Green);
-	gShadow_ColorRebels_Red = GetConVarInt(gH_Cvar_ColorRebels_Red);
-	gShadow_LR_ChickenFight_C_Blue = GetConVarInt(gH_Cvar_LR_ChickenFight_C_Blue);
-	gShadow_LR_ChickenFight_C_Green = GetConVarInt(gH_Cvar_LR_ChickenFight_C_Green);
-	gShadow_LR_ChickenFight_C_Red = GetConVarInt(gH_Cvar_LR_ChickenFight_C_Red);
-	gShadow_LR_ChickenFight_Slay = view_as<bool>(GetConVarInt(gH_Cvar_LR_ChickenFight_Slay));
-	gShadow_LR_Dodgeball_CheatCheck = view_as<bool>(GetConVarInt(gH_Cvar_LR_Dodgeball_CheatCheck));
-	gShadow_LR_Dodgeball_Gravity = GetConVarFloat(gH_Cvar_LR_Dodgeball_Gravity);
-	gShadow_LR_Dodgeball_SpawnTime = GetConVarFloat(gH_Cvar_LR_Dodgeball_SpawnTime);
-	gShadow_LR_HotPotato_MaxTime = GetConVarFloat(gH_Cvar_LR_HotPotato_MaxTime);
-	gShadow_LR_HotPotato_MinTime = GetConVarFloat(gH_Cvar_LR_HotPotato_MinTime);
-	gShadow_LR_HotPotato_Speed = GetConVarFloat(gH_Cvar_LR_HotPotato_Speed);
-	GetConVarString(gH_Cvar_LR_NoScope_Sound, gShadow_LR_NoScope_Sound, sizeof(gShadow_LR_NoScope_Sound));
-	GetConVarString(gH_Cvar_LR_Sound, gShadow_LR_Sound, sizeof(gShadow_LR_Sound));
-	GetConVarString(gH_Cvar_LR_Beacon_Sound, gShadow_LR_Beacon_Sound, sizeof(gShadow_LR_Beacon_Sound));	
-	gShadow_LR_NoScope_Weapon = GetConVarInt(gH_Cvar_LR_NoScope_Weapon);
-	gShadow_Announce_Shot4Shot = view_as<bool>(GetConVarInt(gH_Cvar_Announce_Shot4Shot));
-	gShadow_LR_NonContKiller_Action = view_as<bool>(GetConVarInt(gH_Cvar_LR_NonContKiller_Action));
-	gShadow_LR_S4S_DoubleShot = view_as<bool>(GetConVarInt(gH_Cvar_LR_S4S_DoubleShot));
-	gShadow_LR_GunToss_MarkerMode = GetConVarInt(gH_Cvar_LR_GunToss_MarkerMode);
-	gShadow_LR_GunToss_StartMode = GetConVarInt(gH_Cvar_LR_GunToss_StartMode);
-	gShadow_LR_GunToss_ShowMeter = GetConVarInt(gH_Cvar_LR_GunToss_ShowMeter);
-	gShadow_LR_Delay_Enable_Time = GetConVarFloat(gH_Cvar_LR_Delay_Enable_Time);
-	gShadow_Announce_Delay_Enable = view_as<bool>(GetConVarInt(gH_Cvar_Announce_Delay_Enable));
-	gShadow_LR_Damage = view_as<bool>(GetConVarInt(gH_Cvar_LR_Damage)); 	
-	gShadow_LR_NoScope_Delay = GetConVarInt(gH_Cvar_LR_NoScope_Delay);
-	gShadow_LR_KnifeFight_Rebel = GetConVarInt(gH_Cvar_LR_KnifeFight_Rebel);
-	gShadow_LR_ChickenFight_Rebel = GetConVarInt(gH_Cvar_LR_ChickenFight_Rebel);
-	gShadow_LR_HotPotato_Rebel = GetConVarInt(gH_Cvar_LR_HotPotato_Rebel);	
-	gShadow_LR_Rebel_MaxTs = GetConVarInt(gH_Cvar_LR_Rebel_MaxTs);
-	gShadow_LR_Rebel_MinCTs = GetConVarInt(gH_Cvar_LR_Rebel_MinCTs);
-	gShadow_LR_M4M_MagCapacity = GetConVarInt(gH_Cvar_LR_M4M_MagCapacity);
-	gShadow_LR_KnifeFight_LowGrav = GetConVarFloat(gH_Cvar_LR_KnifeFight_LowGrav);
-	gShadow_LR_KnifeFight_HiSpeed = GetConVarFloat(gH_Cvar_LR_KnifeFight_HiSpeed);
-	gShadow_LR_KnifeFight_Drunk = GetConVarInt(gH_Cvar_LR_KnifeFight_Drunk);
+	gShadow_LR_Race_AirPoints = gH_Cvar_LR_Race_AirPoints.BoolValue;
+	gShadow_LR_Race_NotifyCTs = gH_Cvar_LR_Race_NotifyCTs.BoolValue;
+	gShadow_LR_Beacons = gH_Cvar_LR_Beacons.BoolValue;
+	gShadow_LR_HelpBeams = gH_Cvar_LR_HelpBeams.BoolValue;
+	gShadow_LR_HelpBeams_Distance = gH_Cvar_LR_HelpBeams_Distance.FloatValue;
+	gShadow_LR_Beacon_Interval = gH_Cvar_LR_Beacon_Interval.FloatValue;
+	gShadow_RebelOnImpact = gH_Cvar_RebelOnImpact.BoolValue;
+	gShadow_ColorRebels_Blue = gH_Cvar_ColorRebels_Blue.IntValue;
+	gShadow_ColorRebels_Green = gH_Cvar_ColorRebels_Green.IntValue;
+	gShadow_ColorRebels_Red = gH_Cvar_ColorRebels_Red.IntValue;
+	gShadow_LR_ChickenFight_C_Blue = gH_Cvar_LR_ChickenFight_C_Blue.IntValue;
+	gShadow_LR_ChickenFight_C_Green = gH_Cvar_LR_ChickenFight_C_Green.IntValue;
+	gShadow_LR_ChickenFight_C_Red = gH_Cvar_LR_ChickenFight_C_Red.IntValue;
+	gShadow_LR_ChickenFight_Slay = gH_Cvar_LR_ChickenFight_Slay.BoolValue;
+	gShadow_LR_Dodgeball_CheatCheck = gH_Cvar_LR_Dodgeball_CheatCheck.BoolValue;
+	gShadow_LR_Dodgeball_Gravity = gH_Cvar_LR_Dodgeball_Gravity.FloatValue;
+	gShadow_LR_Dodgeball_SpawnTime = gH_Cvar_LR_Dodgeball_SpawnTime.FloatValue;
+	gShadow_LR_HotPotato_MaxTime = gH_Cvar_LR_HotPotato_MaxTime.FloatValue;
+	gShadow_LR_HotPotato_MinTime = gH_Cvar_LR_HotPotato_MinTime.FloatValue;
+	gShadow_LR_HotPotato_Speed = gH_Cvar_LR_HotPotato_Speed.FloatValue;
+	gH_Cvar_LR_NoScope_Sound.GetString(gShadow_LR_NoScope_Sound, sizeof(gShadow_LR_NoScope_Sound));
+	gH_Cvar_LR_Sound.GetString(gShadow_LR_Sound, sizeof(gShadow_LR_Sound));
+	gH_Cvar_LR_Beacon_Sound.GetString(gShadow_LR_Beacon_Sound, sizeof(gShadow_LR_Beacon_Sound));	
+	gShadow_LR_NoScope_Weapon = gH_Cvar_LR_NoScope_Weapon.IntValue;
+	gShadow_Announce_Shot4Shot = gH_Cvar_Announce_Shot4Shot.BoolValue;
+	gShadow_LR_NonContKiller_Action = gH_Cvar_LR_NonContKiller_Action.BoolValue;
+	gShadow_LR_S4S_DoubleShot = gH_Cvar_LR_S4S_DoubleShot.BoolValue;
+	gShadow_LR_GunToss_MarkerMode = gH_Cvar_LR_GunToss_MarkerMode.IntValue;
+	gShadow_LR_GunToss_StartMode = gH_Cvar_LR_GunToss_StartMode.IntValue;
+	gShadow_LR_GunToss_ShowMeter = gH_Cvar_LR_GunToss_ShowMeter.IntValue;
+	gShadow_LR_Delay_Enable_Time = gH_Cvar_LR_Delay_Enable_Time.FloatValue;
+	gShadow_Announce_Delay_Enable = gH_Cvar_Announce_Delay_Enable.BoolValue;
+	gShadow_LR_Damage = gH_Cvar_LR_Damage.BoolValue; 	
+	gShadow_LR_NoScope_Delay = gH_Cvar_LR_NoScope_Delay.IntValue;
+	gShadow_LR_KnifeFight_Rebel = gH_Cvar_LR_KnifeFight_Rebel.IntValue;
+	gShadow_LR_ChickenFight_Rebel = gH_Cvar_LR_ChickenFight_Rebel.IntValue;
+	gShadow_LR_HotPotato_Rebel = gH_Cvar_LR_HotPotato_Rebel.IntValue;	
+	gShadow_LR_Rebel_MaxTs = gH_Cvar_LR_Rebel_MaxTs.IntValue;
+	gShadow_LR_Rebel_MinCTs = gH_Cvar_LR_Rebel_MinCTs.IntValue;
+	gShadow_LR_M4M_MagCapacity = gH_Cvar_LR_M4M_MagCapacity.IntValue;
+	gShadow_LR_KnifeFight_LowGrav = gH_Cvar_LR_KnifeFight_LowGrav.FloatValue;
+	gShadow_LR_KnifeFight_HiSpeed = gH_Cvar_LR_KnifeFight_HiSpeed.FloatValue;
+	gShadow_LR_KnifeFight_Drunk = gH_Cvar_LR_KnifeFight_Drunk.IntValue;
 }
 
 public void ConVarChanged_Setting(Handle cvar, const char[] oldValue, const char[] newValue)

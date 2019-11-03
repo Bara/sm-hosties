@@ -262,7 +262,7 @@ void TakeActionOnFreekiller(int attacker)
 				{
 					if (g_bSBAvailable)
 					{
-						SBBanPlayer(0, attacker, gShadow_Freekill_BanLength, "SM_Hosties: Freekilling");
+						SBPP_BanPlayer(0, attacker, gShadow_Freekill_BanLength, "SM_Hosties: Freekilling");
 					}
 					else
 					{

@@ -27,7 +27,7 @@
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
-#tryinclude <sourcebans>
+#tryinclude <sourcebanspp>
 #define REQUIRE_EXTENSIONS
 #define REQUIRE_PLUGIN
 
