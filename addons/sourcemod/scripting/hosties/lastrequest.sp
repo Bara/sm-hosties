@@ -35,7 +35,7 @@ bool g_bListenersAdded = false;
 bool g_bAnnouncedThisRound = false;
 bool g_bInLastRequest[MAXPLAYERS+1];
 bool g_bIsARebel[MAXPLAYERS+1];
-Handle gH_BuildLR[MAXPLAYERS+1];
+DataPack gH_BuildLR[MAXPLAYERS+1];
 LastRequest g_LRLookup[MAXPLAYERS+1];
 int g_LR_PermissionLookup[MAXPLAYERS+1];
 Handle g_GunTossTimer = null;
@@ -64,7 +64,6 @@ int blueColor[] = {50, 75, 255, 255};
 int greyColor[] = {128, 128, 128, 255};
 int yellowColor[] = {255, 255, 0, 255};
 
-int g_Offset_Health = -1;
 int g_Offset_Armor = -1;
 int g_Offset_Clip1 = -1;
 int g_Offset_Ammo = -1;
@@ -301,11 +300,6 @@ void LastRequest_OnPluginStart()
 	g_sLastRequestPhrase[LR_JumpContest] = "Jumping Contest";
 
 	// Gather all offsets
-	g_Offset_Health = FindSendPropInfo("CBasePlayer", "m_iHealth");
-	if (g_Offset_Health == -1)
-	{
-		SetFailState("Unable to find offset for health.");
-	}
 	g_Offset_Armor = FindSendPropInfo("CCSPlayer", "m_ArmorValue");
 	if (g_Offset_Armor == -1)
 	{
@@ -385,10 +379,10 @@ void LastRequest_OnPluginStart()
 	HookEvent("round_freeze_end", LastRequest_RoundFreezeEnd);
 	
 	// Make global arrays
-	gH_DArray_LastRequests = CreateArray(2);
-	gH_DArray_Beacons = CreateArray();
-	gH_DArray_LR_CustomNames = CreateArray(MAX_DISPLAYNAME_SIZE);
-	gH_DArray_LR_Partners = CreateArray(10);
+	gH_DArray_LastRequests = new ArrayList(2);
+	gH_DArray_Beacons = new ArrayList();
+	gH_DArray_LR_CustomNames = new ArrayList(MAX_DISPLAYNAME_SIZE);
+	gH_DArray_LR_Partners = new ArrayList(10);
 	// array structure:
 	// -- block 0 -> LastRequest type
 	// -- block 1 -> Prisoner client index
@@ -697,10 +691,10 @@ public int Native_ProcessLRs(Handle h_Plugin, int iNumParameters)
 	AddToForward(gH_Frwd_LR_Process, h_Plugin, LoopCallback);
 	LastRequest thisType = GetNativeCell(2);
 		
-	int theLRArraySize = GetArraySize(gH_DArray_LR_Partners);
-	for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+	int theLRArraySize = gH_DArray_LR_Partners.Length;
+	for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 	{
-		LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+		LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 		if (type == thisType)
 		{
 			Call_StartForward(gH_Frwd_LR_Process);
@@ -731,11 +725,11 @@ public int Native_LR_AddToList(Handle h_Plugin, int iNumParameters)
 	{
 		AutoStart = true;
 	}
-	int iPosition = PushArrayString(gH_DArray_LR_CustomNames, sLR_Name);
+	int iPosition = gH_DArray_LR_CustomNames.PushString(sLR_Name);
 	// take the maximum number of LRs + the custom LR index to get int value to push
 	iPosition += view_as<int>(LastRequest);
-	int iIndex = PushArrayCell(gH_DArray_LastRequests, iPosition);
-	SetArrayCell(gH_DArray_LastRequests, iIndex, AutoStart, 1);
+	int iIndex = gH_DArray_LastRequests.Push(iPosition);
+	gH_DArray_LastRequests.Set(iIndex, AutoStart, 1);
 	return iPosition;
 }
 
@@ -777,9 +771,9 @@ public int Native_LR_Initialize(Handle h_Plugin, int iNumParameters)
 		{
 			if(!IsLastRequestAutoStart(g_selection[LR_Player_Prisoner]))
 			{
-				int iArrayIndex = PushArrayCell(gH_DArray_LR_Partners, g_selection[LR_Player_Prisoner]);
-				SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, LR_Player_Prisoner, view_as<int>(Block_Prisoner));
-				SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, g_LR_Player_Guard[LR_Player_Prisoner], view_as<int>(Block_Guard));
+				int iArrayIndex = gH_DArray_LR_Partners.Push(g_selection[LR_Player_Prisoner]);
+				gH_DArray_LR_Partners.Set(iArrayIndex, LR_Player_Prisoner, view_as<int>(Block_Prisoner));
+				gH_DArray_LR_Partners.Set(iArrayIndex, g_LR_Player_Guard[LR_Player_Prisoner], view_as<int>(Block_Guard));
 
 				g_bInLastRequest[LR_Player_Prisoner] = true;
 				g_bInLastRequest[g_LR_Player_Guard[LR_Player_Prisoner]] = true;
@@ -796,7 +790,7 @@ public int Native_LR_Initialize(Handle h_Plugin, int iNumParameters)
 				// Close datapack
 				if (gH_BuildLR[LR_Player_Prisoner] != null)
 				{
-					CloseHandle(gH_BuildLR[LR_Player_Prisoner]);		
+					delete gH_BuildLR[LR_Player_Prisoner];
 				}
 				gH_BuildLR[LR_Player_Prisoner] = null;
 				
@@ -920,11 +914,11 @@ void MarkRebel(int client, int victim)
 
 int Local_IsClientInLR(int client)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	for (int idx = 0; idx < iArraySize; idx++)
 	{
-		int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-		int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+		int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+		int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 		if ((LR_Player_Prisoner == client) || (LR_Player_Guard == client))
 		{
 			// check if a partner exists
@@ -1027,7 +1021,7 @@ public Action Command_CancelLR(int client, int args)
 
 void StopActiveLRs(int client)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	while (iArraySize > 0)
 	{
 		CleanupLastRequest(client, iArraySize-1);
@@ -1064,14 +1058,14 @@ public Action LastRequest_PlayerDeath(Event event, const char[] name, bool dontB
 	int attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
 
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			
 			if (victim == LR_Player_Prisoner || victim == LR_Player_Guard) 
 			{					
@@ -1155,17 +1149,17 @@ public Action LastRequest_PlayerHurt(Event event, const char[] name, bool dontBr
 	
 	if (Local_IsClientInLR(attacker) || Local_IsClientInLR(target))
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			
 			if ((type == LR_Rebel) || !attacker || (attacker == target))
 			{
 				continue;
 			}
 			
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			
 			// someone outside the group interfered inside this LR
 			if ((target == LR_Player_Prisoner || target == LR_Player_Guard) && \
@@ -1286,14 +1280,14 @@ public Action LastRequest_PlayerHurt(Event event, const char[] name, bool dontBr
 
 public Action LastRequest_PlayerDisconnect(Event event, const char[] name, bool dontBroadcast)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
 		int client = GetClientOfUserId(GetEventInt(event, "userid"));
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			
 			if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 			{
@@ -1307,9 +1301,9 @@ public Action LastRequest_PlayerDisconnect(Event event, const char[] name, bool 
 
 void CleanupLastRequest(int loser, int arrayIndex)
 {
-	LastRequest type = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_LRType));
-	int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_Prisoner));
-	int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_Guard));
+	LastRequest type = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_LRType));
+	int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_Prisoner));
+	int LR_Player_Guard = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_Guard));
 	
 	g_bInLastRequest[LR_Player_Prisoner] = false;
 	g_bInLastRequest[LR_Player_Guard] = false;
@@ -1323,7 +1317,7 @@ void CleanupLastRequest(int loser, int arrayIndex)
 	{
 		case LR_KnifeFight:
 		{
-			KnifeType KnifeChoice = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_Global1));
+			KnifeType KnifeChoice = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_Global1));
 			switch (KnifeChoice)
 			{
 				case Knife_Drunk, Knife_Drugs:
@@ -1378,8 +1372,8 @@ void CleanupLastRequest(int loser, int arrayIndex)
 		}
 		case LR_GunToss:
 		{
-			int GTdeagle1 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_PrisonerData)));
-			int GTdeagle2 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_GuardData)));
+			int GTdeagle1 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_PrisonerData)));
+			int GTdeagle2 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_GuardData)));
 			if (IsValidEntity(GTdeagle1))
 			{
 				SetEntityRenderColor(GTdeagle1, 255, 255, 255);
@@ -1412,7 +1406,7 @@ void CleanupLastRequest(int loser, int arrayIndex)
 				GivePlayerItem(winner, "weapon_knife");
 			}
 			
-			int HPdeagle = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_Global4));
+			int HPdeagle = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_Global4));
 			RemoveBeacon(HPdeagle);
 			if (IsValidEntity(HPdeagle))
 			{
@@ -1447,7 +1441,7 @@ void CleanupLastRequest(int loser, int arrayIndex)
 					SetEntData(winner, g_Offset_Ammo+(view_as<int>(12)*4), 0, _, true);
 				}
 				
-				SetEntData(winner, g_Offset_Health, 100);
+				SetEntityHealth(winner, 100);
 				GivePlayerItem(winner, "weapon_knife");
 	
 				if (gShadow_NoBlock)
@@ -1459,7 +1453,7 @@ void CleanupLastRequest(int loser, int arrayIndex)
 		case LR_Race:
 		{
 			// free these resources	
-			CloseHandle(GetArrayCell(gH_DArray_LR_Partners, arrayIndex, 9));
+			delete view_as<DataPack>(gH_DArray_LR_Partners.Get(arrayIndex, 9));
 			if (IsClientInGame(winner) && IsPlayerAlive(winner))
 			{
 				GivePlayerItem(winner, "weapon_knife");
@@ -1472,7 +1466,7 @@ void CleanupLastRequest(int loser, int arrayIndex)
 		}
 		case LR_JumpContest:
 		{
-			JumpContest JumpType = GetArrayCell(gH_DArray_LR_Partners, arrayIndex, view_as<int>(Block_Global2));
+			JumpContest JumpType = gH_DArray_LR_Partners.Get(arrayIndex, view_as<int>(Block_Global2));
 
 			switch (JumpType)
 			{
@@ -1525,13 +1519,13 @@ public Action LastRequest_BulletImpact(Event event, const char[] name, bool dont
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+	for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 	{	
-		LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+		LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 		if (type == LR_NoScope || type == LR_Mag4Mag)
 		{
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 			{
 				buttons &= ~IN_ATTACK2;
@@ -1543,17 +1537,17 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 public Action LastRequest_WeaponZoom(Event event, const char[] name, bool dontBroadcast)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
 		int client = GetClientOfUserId(GetEventInt(event, "userid"));
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_NoScope)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
 					SetEntData(client, g_Offset_FOV, 0, 4, true);
@@ -1568,18 +1562,18 @@ public Action LastRequest_WeaponZoom(Event event, const char[] name, bool dontBr
 
 public Action LastRequest_PlayerJump(Event event, const char[] name, bool dontBroadcast)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
 		int client = GetClientOfUserId(GetEventInt(event, "userid"));
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_JumpContest)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
-				JumpContest JumpType = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
+				JumpContest JumpType = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
 				
 				switch (JumpType)
 				{
@@ -1588,59 +1582,59 @@ public Action LastRequest_PlayerJump(Event event, const char[] name, bool dontBr
 						int iJumpCount = 0;
 						if (client == LR_Player_Prisoner)
 						{
-							iJumpCount = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
-							SetArrayCell(gH_DArray_LR_Partners, idx, ++iJumpCount, view_as<int>(Block_PrisonerData));
+							iJumpCount = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
+							gH_DArray_LR_Partners.Set(idx, ++iJumpCount, view_as<int>(Block_PrisonerData));
 						}
 						else if (client == LR_Player_Guard)
 						{
-							iJumpCount = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
-							SetArrayCell(gH_DArray_LR_Partners, idx, ++iJumpCount, view_as<int>(Block_GuardData));
+							iJumpCount = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
+							gH_DArray_LR_Partners.Set(idx, ++iJumpCount, view_as<int>(Block_GuardData));
 						}					
 					}
 					case Jump_Farthest:
 					{
-						bool Prisoner_Jumped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
-						bool Guard_Jumped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
+						bool Prisoner_Jumped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
+						bool Guard_Jumped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
 						
 						if ((client == LR_Player_Prisoner) && !Prisoner_Jumped)
 						{
 							// record position
 							float Prisoner_Position[3];
 							GetClientAbsOrigin(LR_Player_Prisoner, Prisoner_Position);
-							Handle JumpPackPosition = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));						
+							DataPack JumpPackPosition = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));						
 							#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-								SetPackPosition(JumpPackPosition, view_as<DataPackPos>(0));
+								JumpPackPosition.Position = view_as<DataPackPos>(0);
 							#else
-								SetPackPosition(JumpPackPosition, 0);
+								JumpPackPosition.Position = 0;
 							#endif
-							WritePackFloat(JumpPackPosition, Prisoner_Position[0]);
-							WritePackFloat(JumpPackPosition, Prisoner_Position[1]);
-							WritePackFloat(JumpPackPosition, Prisoner_Position[2]);
+							JumpPackPosition.WriteFloat(Prisoner_Position[0]);
+							JumpPackPosition.WriteFloat(Prisoner_Position[1]);
+							JumpPackPosition.WriteFloat(Prisoner_Position[2]);
 						}
 						else if ((client == LR_Player_Guard) && !Guard_Jumped)
 						{
 							// record position
 							float Guard_Position[3];
 							GetClientAbsOrigin(LR_Player_Guard, Guard_Position);
-							Handle JumpPackPosition = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));							
+							DataPack JumpPackPosition = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));							
 							#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-								SetPackPosition(JumpPackPosition, view_as<DataPackPos>(24));
+								JumpPackPosition.Position = view_as<DataPackPos>(24);
 							#else
-								SetPackPosition(JumpPackPosition, 24);
+								JumpPackPosition.Position = 24;
 							#endif
-							WritePackFloat(JumpPackPosition, Guard_Position[0]);
-							WritePackFloat(JumpPackPosition, Guard_Position[1]);
-							WritePackFloat(JumpPackPosition, Guard_Position[2]);
+							JumpPackPosition.WriteFloat(Guard_Position[0]);
+							JumpPackPosition.WriteFloat(Guard_Position[1]);
+							JumpPackPosition.WriteFloat(Guard_Position[2]);
 						}
 					}
 				}
 			}
 			else if (type == LR_GunToss)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
-				int GTp1dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
-				int GTp2dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
+				int GTp1dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
+				int GTp2dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
 
 				// we want to grab the last jump position *before* they throw their gun
 				if (client == LR_Player_Prisoner && !GTp1dropped)
@@ -1648,30 +1642,30 @@ public Action LastRequest_PlayerJump(Event event, const char[] name, bool dontBr
 					// record position
 					float Prisoner_Position[3];
 					GetClientAbsOrigin(LR_Player_Prisoner, Prisoner_Position);
-					Handle JumpPackPosition = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));
+					DataPack JumpPackPosition = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));
 					#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-						SetPackPosition(JumpPackPosition, view_as<DataPackPos>(96));
+						JumpPackPosition.Position = view_as<DataPackPos>(96);
 					#else
-						SetPackPosition(JumpPackPosition, 96);
+						JumpPackPosition.Position = 96;
 					#endif
-					WritePackFloat(JumpPackPosition, Prisoner_Position[0]);
-					WritePackFloat(JumpPackPosition, Prisoner_Position[1]);
-					WritePackFloat(JumpPackPosition, Prisoner_Position[2]);
+					JumpPackPosition.WriteFloat(Prisoner_Position[0]);
+					JumpPackPosition.WriteFloat(Prisoner_Position[1]);
+					JumpPackPosition.WriteFloat(Prisoner_Position[2]);
 				}
 				else if (client == LR_Player_Guard && !GTp2dropped)
 				{
 					// record position
 					float Guard_Position[3];
 					GetClientAbsOrigin(LR_Player_Guard, Guard_Position);
-					Handle JumpPackPosition = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));
+					DataPack JumpPackPosition = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));
 					#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-						SetPackPosition(JumpPackPosition, view_as<DataPackPos>(120));
+						JumpPackPosition.Position = view_as<DataPackPos>(120);
 					#else
-						SetPackPosition(JumpPackPosition, 120);
+						JumpPackPosition.Position = 120;
 					#endif
-					WritePackFloat(JumpPackPosition, Guard_Position[0]);
-					WritePackFloat(JumpPackPosition, Guard_Position[1]);
-					WritePackFloat(JumpPackPosition, Guard_Position[2]);
+					JumpPackPosition.WriteFloat(Guard_Position[0]);
+					JumpPackPosition.WriteFloat(Guard_Position[1]);
+					JumpPackPosition.WriteFloat(Guard_Position[2]);
 				}
 			}
 		}
@@ -1680,24 +1674,24 @@ public Action LastRequest_PlayerJump(Event event, const char[] name, bool dontBr
 
 public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBroadcast)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
 		int client = GetClientOfUserId(GetEventInt(event, "userid"));
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_Mag4Mag)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				if ((client == LR_Player_Prisoner) || (client == LR_Player_Guard))
 				{
-					int M4M_Prisoner_Weapon = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
-					int M4M_Guard_Weapon = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
-					int M4M_RoundsFired = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
-					int M4M_Ammo = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));
+					int M4M_Prisoner_Weapon = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
+					int M4M_Guard_Weapon = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
+					int M4M_RoundsFired = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
+					int M4M_Ammo = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));
 					
 					char FiredWeapon[32];
 					GetEventString(event, "weapon", FiredWeapon, sizeof(FiredWeapon));
@@ -1716,13 +1710,13 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 						// check if a shot was actually fired
 						if (currentAmmo != M4M_Ammo)
 						{
-							SetArrayCell(gH_DArray_LR_Partners, idx, currentAmmo, view_as<int>(Block_Global3));
-							SetArrayCell(gH_DArray_LR_Partners, idx, ++M4M_RoundsFired, view_as<int>(Block_Global2));
+							gH_DArray_LR_Partners.Set(idx, currentAmmo, view_as<int>(Block_Global3));
+							gH_DArray_LR_Partners.Set(idx, ++M4M_RoundsFired, view_as<int>(Block_Global2));
 							
 							if (M4M_RoundsFired >= gShadow_LR_M4M_MagCapacity)
 							{
 								M4M_RoundsFired = 0;
-								SetArrayCell(gH_DArray_LR_Partners, idx, M4M_RoundsFired, view_as<int>(Block_Global2));
+								gH_DArray_LR_Partners.Set(idx, M4M_RoundsFired, view_as<int>(Block_Global2));
 								if (gShadow_Announce_Shot4Shot)
 								{
 									if (gShadow_SendGlobalMsgs)
@@ -1740,12 +1734,12 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 								if (LR_Player_Prisoner == client)
 								{
 									SetEntData(M4M_Guard_Weapon, g_Offset_Clip1, gShadow_LR_M4M_MagCapacity);
-									SetArrayCell(gH_DArray_LR_Partners, idx, LR_Player_Guard, view_as<int>(Block_Global1));
+									gH_DArray_LR_Partners.Set(idx, LR_Player_Guard, view_as<int>(Block_Global1));
 								}
 								else if (LR_Player_Guard == client)
 								{
 									SetEntData(M4M_Prisoner_Weapon, g_Offset_Clip1, gShadow_LR_M4M_MagCapacity);
-									SetArrayCell(gH_DArray_LR_Partners, idx, LR_Player_Prisoner, view_as<int>(Block_Global1));
+									gH_DArray_LR_Partners.Set(idx, LR_Player_Prisoner, view_as<int>(Block_Global1));
 								}
 								
 								if(g_Game == Game_CSGO)
@@ -1766,12 +1760,12 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 			}
 			else if (type == LR_RussianRoulette)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				if ((client == LR_Player_Prisoner) || (client == LR_Player_Guard))
 				{							
-					int Prisoner_Weapon = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData)));
-					int Guard_Weapon = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData)));
+					int Prisoner_Weapon = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData)));
+					int Guard_Weapon = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData)));
 
 					if (gShadow_Announce_Shot4Shot)
 					{
@@ -1816,13 +1810,13 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 			}
 			else if (type == LR_Shot4Shot)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				if ((client == LR_Player_Prisoner) || (client == LR_Player_Guard))
 				{
-					int Prisoner_S4S_Pistol = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
-					int Guard_S4S_Pistol = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
-					int S4Slastshot = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
+					int Prisoner_S4S_Pistol = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
+					int Guard_S4S_Pistol = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
+					int S4Slastshot = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
 					
 					char FiredWeapon[48];
 					GetEventString(event, "weapon", FiredWeapon, sizeof(FiredWeapon));
@@ -1836,7 +1830,7 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 					else if (StrContains(FiredWeapon, "knife") == -1)
 					{
 						// update who took the last shot
-						SetArrayCell(gH_DArray_LR_Partners, idx, client, view_as<int>(Block_Global1));
+						gH_DArray_LR_Partners.Set(idx, client, view_as<int>(Block_Global1));
 						
 						// check for double shot situation (if they picked up another deagle with more ammo between shots)
 						if (gShadow_LR_S4S_DoubleShot && (S4Slastshot == client))
@@ -1892,8 +1886,8 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 			}			
 			else if (type == LR_NoScope)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
 					// place delay on zoom
@@ -1902,7 +1896,7 @@ public Action LastRequest_WeaponFire(Event event, const char[] name, bool dontBr
 					
 					// grab weapon choice
 					NoScopeWeapon NS_Selection;
-					NS_Selection = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));					
+					NS_Selection = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));					
 					switch (NS_Selection)
 					{
 						case NSW_AWP:
@@ -1938,22 +1932,22 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 {
 	if ((victim != attacker) && (victim > 0) && (victim <= MaxClients) && (attacker > 0) && (attacker <= MaxClients))
 	{
-		int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+		int iArraySize = gH_DArray_LR_Partners.Length;
 		if (iArraySize > 0)
 		{
-			for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+			for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
-				LastRequest Type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
+				LastRequest Type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 				
 				// if a roulette player is hurting the other contestant
 				if ((Type == LR_RussianRoulette) && (attacker == LR_Player_Guard || attacker == LR_Player_Prisoner) && \
 					(victim == LR_Player_Guard || victim == LR_Player_Prisoner))
 				{
 					// determine if LR weapon is being used
-					int Pistol_Prisoner = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData)));
-					int Pistol_Guard = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData)));
+					int Pistol_Prisoner = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData)));
+					int Pistol_Guard = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData)));
 					
 					if ((weapon != -1) && (weapon != Pistol_Prisoner) && (weapon != Pistol_Guard))
 					{
@@ -2016,18 +2010,18 @@ public Action OnTakeDamage(int victim, int &attacker, int &inflictor, float &dam
 
 public Action OnWeaponDecideUse(int client, int weapon)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			
 			if (type == LR_HotPotato)
 			{
-				int HPdeagle = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global4));
+				int HPdeagle = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global4));
 				
 				// check if someone else picked up the hot potato
 				if (client != LR_Player_Guard && client != LR_Player_Prisoner && weapon == HPdeagle)
@@ -2042,10 +2036,10 @@ public Action OnWeaponDecideUse(int client, int weapon)
 			}
 			else if (type == LR_GunToss)
 			{
-				int GTp1done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));
-				int GTp2done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global4));
-				int GTdeagle1 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData)));
-				int GTdeagle2 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData)));
+				int GTp1done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));
+				int GTp2done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global4));
+				int GTdeagle1 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData)));
+				int GTdeagle2 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData)));
 				
 				if ((weapon == GTdeagle1 && !GTp1done) || (weapon == GTdeagle2 && !GTp2done))
 				{
@@ -2089,23 +2083,23 @@ public Action OnWeaponDecideUse(int client, int weapon)
 
 public Action OnWeaponEquip(int client, int weapon)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 
 			if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 			{
 				if (type == LR_GunToss)
 				{
-					int GTp1dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
-					int GTp2dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
-					int GTp1done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));
-					int GTp2done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global4));
+					int GTp1dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
+					int GTp2dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
+					int GTp1done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));
+					int GTp2done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global4));
 					
 					if (client == LR_Player_Prisoner && GTp1dropped && !GTp1done)
 					{
@@ -2113,7 +2107,7 @@ public Action OnWeaponEquip(int client, int weapon)
 						GetEdictClassname(weapon, weapon_name, sizeof(weapon_name));
 						if (StrEqual(weapon_name, "weapon_deagle"))
 						{
-							SetArrayCell(gH_DArray_LR_Partners, idx, true, view_as<int>(Block_Global3));
+							gH_DArray_LR_Partners.Set(idx, true, view_as<int>(Block_Global3));
 						}			
 					}
 					else if (client == LR_Player_Guard && GTp2dropped && !GTp2done)
@@ -2122,16 +2116,16 @@ public Action OnWeaponEquip(int client, int weapon)
 						GetEdictClassname(weapon, weapon_name, sizeof(weapon_name));
 						if (StrEqual(weapon_name, "weapon_deagle"))
 						{
-							SetArrayCell(gH_DArray_LR_Partners, idx, true, view_as<int>(Block_Global4));
+							gH_DArray_LR_Partners.Set(idx, true, view_as<int>(Block_Global4));
 						}						
 					}	
 				}
 				else if (type == LR_HotPotato)
 				{
-					int HPdeagle = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global4));
+					int HPdeagle = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global4));
 					if (weapon == HPdeagle)
 					{
-						SetArrayCell(gH_DArray_LR_Partners, idx, client, view_as<int>(Block_Global1)); // HPloser
+						gH_DArray_LR_Partners.Set(idx, client, view_as<int>(Block_Global1)); // HPloser
 						if (gShadow_LR_HotPotato_Mode != 2)
 						{
 							SetEntPropFloat(client, Prop_Data, "m_flLaggedMovementValue", gShadow_LR_HotPotato_Speed);
@@ -2163,16 +2157,16 @@ public Action OnWeaponEquip(int client, int weapon)
 
 public Action OnWeaponDrop(int client, int weapon)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_RussianRoulette)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
@@ -2181,15 +2175,15 @@ public Action OnWeaponDrop(int client, int weapon)
 			}
 			else if (type == LR_GunToss)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
-					int GTdeagle1 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData)));
-					int GTdeagle2 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData)));
-					int GTp1dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
-					int GTp2dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
+					int GTdeagle1 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData)));
+					int GTdeagle2 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData)));
+					int GTp1dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
+					int GTp2dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
 					
 					if (((client == LR_Player_Prisoner && GTp1dropped) || 
 						(client == LR_Player_Guard && GTp2dropped)) && (gShadow_LR_GunToss_StartMode == 1))
@@ -2207,7 +2201,7 @@ public Action OnWeaponDrop(int client, int weapon)
 					}
 					else
 					{
-						Handle PositionDataPack = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));
+						DataPack PositionDataPack = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));
 						if (client == LR_Player_Prisoner)
 						{
 							if (IsValidEntity(GTdeagle1))
@@ -2221,14 +2215,14 @@ public Action OnWeaponDrop(int client, int weapon)
 								float GTp1droppos[3];
 								GetClientAbsOrigin(LR_Player_Prisoner, GTp1droppos);
 								#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-									SetPackPosition(PositionDataPack, view_as<DataPackPos>(48));
+									PositionDataPack.Position = view_as<DataPackPos>(48);
 								#else
-									SetPackPosition(PositionDataPack, 48);
+									PositionDataPack.Position = 48;
 								#endif
-								WritePackFloat(PositionDataPack, GTp1droppos[0]);
-								WritePackFloat(PositionDataPack, GTp1droppos[1]);
-								WritePackFloat(PositionDataPack, GTp1droppos[2]);
-								SetArrayCell(gH_DArray_LR_Partners, idx, true, view_as<int>(Block_Global1));
+								PositionDataPack.WriteFloat(GTp1droppos[0]);
+								PositionDataPack.WriteFloat(GTp1droppos[1]);
+								PositionDataPack.WriteFloat(GTp1droppos[2]);
+								gH_DArray_LR_Partners.Set(idx, true, view_as<int>(Block_Global1));
 							}
 						}
 						else if (client == LR_Player_Guard)
@@ -2243,15 +2237,15 @@ public Action OnWeaponDrop(int client, int weapon)
 								float GTp2droppos[3];
 								GetClientAbsOrigin(LR_Player_Guard, GTp2droppos);
 								#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-									SetPackPosition(PositionDataPack, view_as<DataPackPos>(72));
+									PositionDataPack.Position = view_as<DataPackPos>(72);
 								#else
-									SetPackPosition(PositionDataPack, 722);
+									PositionDataPack.Position = 722;
 								#endif
-								WritePackFloat(PositionDataPack, GTp2droppos[0]);
-								WritePackFloat(PositionDataPack, GTp2droppos[1]);
-								WritePackFloat(PositionDataPack, GTp2droppos[2]);
+								PositionDataPack.WriteFloat(GTp2droppos[0]);
+								PositionDataPack.WriteFloat(GTp2droppos[1]);
+								PositionDataPack.WriteFloat(GTp2droppos[2]);
 								
-								SetArrayCell(gH_DArray_LR_Partners, idx, true, view_as<int>(Block_Global2));
+								gH_DArray_LR_Partners.Set(idx, true, view_as<int>(Block_Global2));
 							}
 						}	
 						
@@ -2275,19 +2269,19 @@ public Action OnWeaponDrop(int client, int weapon)
 
 public Action OnPreThink(int client)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_KnifeFight)
 			{
-				KnifeType KnifeChoice = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
+				KnifeType KnifeChoice = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
 				if(KnifeChoice == Knife_ThirdPerson)
 				{
-					int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-					int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+					int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+					int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 					if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 					{
 						SetThirdPerson(client);
@@ -2337,80 +2331,80 @@ void LastRequest_OnConfigsExecuted()
 		gShadow_LR_KnifeFight_On = gH_Cvar_LR_KnifeFight_On.BoolValue;
 		if (gShadow_LR_KnifeFight_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_KnifeFight);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_KnifeFight);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_Shot4Shot_On = gH_Cvar_LR_Shot4Shot_On.BoolValue;
 		if (gShadow_LR_Shot4Shot_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Shot4Shot);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_Shot4Shot);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_GunToss_On = gH_Cvar_LR_GunToss_On.BoolValue;
 		if (gShadow_LR_GunToss_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_GunToss);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_GunToss);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_ChickenFight_On = gH_Cvar_LR_ChickenFight_On.BoolValue;
 		if (gShadow_LR_ChickenFight_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_ChickenFight);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_ChickenFight);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_HotPotato_On = gH_Cvar_LR_HotPotato_On.BoolValue;
 		if (gShadow_LR_HotPotato_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_HotPotato);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_HotPotato);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_Dodgeball_On = gH_Cvar_LR_Dodgeball_On.BoolValue;
 		if (gShadow_LR_Dodgeball_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Dodgeball);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_Dodgeball);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_NoScope_On = gH_Cvar_LR_NoScope_On.BoolValue;
 		if (gShadow_LR_NoScope_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_NoScope);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_NoScope);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_RockPaperScissors_On = gH_Cvar_LR_RockPaperScissors_On.BoolValue;
 		if (gShadow_LR_RockPaperScissors_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_RockPaperScissors);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_RockPaperScissors);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_Rebel_On = gH_Cvar_LR_Rebel_On.BoolValue;
 		if (gShadow_LR_Rebel_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Rebel);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_Rebel);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_Mag4Mag_On = gH_Cvar_LR_Mag4Mag_On.BoolValue;
 		if (gShadow_LR_Mag4Mag_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Mag4Mag);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_Mag4Mag);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_Race_On = gH_Cvar_LR_Race_On.BoolValue;
 		if (gShadow_LR_Race_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_Race);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_Race);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_RussianRoulette_On = gH_Cvar_LR_RussianRoulette_On.BoolValue;
 		if (gShadow_LR_RussianRoulette_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_RussianRoulette);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_RussianRoulette);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 		gShadow_LR_JumpContest_On = gH_Cvar_LR_JumpContest_On.BoolValue;
 		if (gShadow_LR_JumpContest_On)
 		{
-			iIndex = PushArrayCell(gH_DArray_LastRequests, LR_JumpContest);
-			SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+			iIndex = gH_DArray_LastRequests.Push(LR_JumpContest);
+			gH_DArray_LastRequests.Set(iIndex, true, 1);
 		}
 	}
 	g_bPushedToMenu = true;
@@ -2874,8 +2868,8 @@ void UpdateLastRequestArray(LastRequest entry)
 	int iArrayIndex = FindValueInArray(gH_DArray_LastRequests, entry);
 	if (iArrayIndex == -1)
 	{
-		int iIndex = PushArrayCell(gH_DArray_LastRequests, entry);
-		SetArrayCell(gH_DArray_LastRequests, iIndex, true, 1);
+		int iIndex = gH_DArray_LastRequests.Push(entry);
+		gH_DArray_LastRequests.Set(iIndex, true, 1);
 	}
 	else
 	{
@@ -2892,7 +2886,7 @@ bool IsLastRequestAutoStart(LastRequest game)
 	}
 	else
 	{
-		return view_as<bool>(GetArrayCell(gH_DArray_LastRequests, iArrayIndex, 1));
+		return view_as<bool>(gH_DArray_LastRequests.Get(iArrayIndex, 1));
 	}
 }
 
@@ -2977,26 +2971,26 @@ public Action Command_LastRequest(int client, int args)
 
 void DisplayLastRequestMenu(int client, int Ts, int CTs)
 {
-	gH_BuildLR[client] = CreateDataPack();
-	Handle menu = CreateMenu(LR_Selection_Handler);
-	SetMenuTitle(menu, "%T", "LR Choose", client);
+	gH_BuildLR[client] = new DataPack();
+	Menu menu = new Menu(LR_Selection_Handler);
+	menu.SetTitle("%T", "LR Choose", client);
 	
 	char sDataField[MAX_DATAENTRY_SIZE];
 	char sTitleField[MAX_DISPLAYNAME_SIZE];
 	LastRequest entry;	
-	int iLR_ArraySize = GetArraySize(gH_DArray_LastRequests);
+	int iLR_ArraySize = gH_DArray_LastRequests.Length;
 	int iCustomCount = 0;
-	int iCustomLR_Size = GetArraySize(gH_DArray_LR_CustomNames);
+	int iCustomLR_Size = gH_DArray_LR_CustomNames.Length;
 	for (int iLR_Index = 0; iLR_Index < iLR_ArraySize; iLR_Index++)
 	{
-		entry = GetArrayCell(gH_DArray_LastRequests, iLR_Index);
+		entry = gH_DArray_LastRequests.Get(iLR_Index);
 		if (entry < LastRequest)
 		{
 			if (entry != LR_Rebel || (entry == LR_Rebel && Ts <= gShadow_LR_Rebel_MaxTs && CTs >= gShadow_LR_Rebel_MinCTs))
 			{
 				Format(sDataField, sizeof(sDataField), "%d", entry);
 				Format(sTitleField, sizeof(sTitleField), "%T", g_sLastRequestPhrase[entry], client);
-				AddMenuItem(menu, sDataField, sTitleField);
+				menu.AddItem(sDataField, sTitleField);
 			}
 		}
 		else
@@ -3004,18 +2998,18 @@ void DisplayLastRequestMenu(int client, int Ts, int CTs)
 			if (iCustomCount < iCustomLR_Size)
 			{
 				Format(sDataField, sizeof(sDataField), "%d", entry);
-				GetArrayString(gH_DArray_LR_CustomNames, iCustomCount, sTitleField, MAX_DISPLAYNAME_SIZE);
-				AddMenuItem(menu, sDataField, sTitleField);
+				gH_DArray_LR_CustomNames.GetString(iCustomCount, sTitleField, MAX_DISPLAYNAME_SIZE);
+				menu.AddItem(sDataField, sTitleField);
 				iCustomCount++;
 			}
 		}
 	}
 	
-	SetMenuExitButton(menu, gShadow_LR_KillTimeouts ? false : true);
-	DisplayMenu(menu, client, gShadow_LR_MenuTime);
+	menu.ExitButton = gShadow_LR_KillTimeouts ? false : true;
+	menu.Display(client, gShadow_LR_MenuTime);
 }
 
-public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int iButtonChoice)
+public int LR_Selection_Handler(Menu menu, MenuAction action, int client, int iButtonChoice)
 {
 	switch (action)
 	{
@@ -3028,7 +3022,7 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 					if (IsPlayerAlive(client) && (GetClientTeam(client) == CS_TEAM_T))
 					{
 						char sData[MAX_DATAENTRY_SIZE];
-						GetMenuItem(menu, iButtonChoice, sData, sizeof(sData));
+						menu.GetItem(iButtonChoice, sData, sizeof(sData));
 						LastRequest choice = view_as<LastRequest>(StringToInt(sData));
 						g_LRLookup[client] = choice;
 						
@@ -3036,46 +3030,46 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 						{
 							case LR_KnifeFight:
 							{
-								Handle KnifeFightMenu = CreateMenu(SubLRType_MenuHandler);								
-								SetMenuTitle(KnifeFightMenu, "%T", "Knife Fight Selection Menu", client);
+								Menu KnifeFightMenu = new Menu(SubLRType_MenuHandler);								
+								KnifeFightMenu.SetTitle("%T", "Knife Fight Selection Menu", client);
 								
 								char sSubTypeName[MAX_DISPLAYNAME_SIZE];
 								char sDataField[MAX_DATAENTRY_SIZE];
 								Format(sDataField, sizeof(sDataField), "%d", Knife_Vintage);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_Vintage", client);
-								AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+								KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 								if (g_Game == Game_CSS)
 								{
 									Format(sDataField, sizeof(sDataField), "%d", Knife_Drunk);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_Drunk", client);
-									AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+									KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 									Format(sDataField, sizeof(sDataField), "%d", Knife_Drugs);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_Drugs", client);
-									AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+									KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 								}
 								Format(sDataField, sizeof(sDataField), "%d", Knife_LowGrav);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_LowGrav", client);
-								AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+								KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 								Format(sDataField, sizeof(sDataField), "%d", Knife_HiSpeed);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_HiSpeed", client);
-								AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+								KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 								Format(sDataField, sizeof(sDataField), "%d", Knife_ThirdPerson);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Knife_ThirdPerson", client);
-								AddMenuItem(KnifeFightMenu, sDataField, sSubTypeName);
+								KnifeFightMenu.AddItem(sDataField, sSubTypeName);
 								
-								SetMenuExitBackButton(KnifeFightMenu, true);
-								DisplayMenu(KnifeFightMenu, client, 10);
+								KnifeFightMenu.ExitBackButton = true;
+								KnifeFightMenu.Display(client, 10);
 							}
 							case LR_Shot4Shot, LR_Mag4Mag:
 							{
-								Handle SubWeaponMenu = CreateMenu(SubLRType_MenuHandler);
-								SetMenuTitle(SubWeaponMenu, "%T", "Pistol Selection Menu", client);
+								Menu SubWeaponMenu = new Menu(SubLRType_MenuHandler);
+								SubWeaponMenu.SetTitle("%T", "Pistol Selection Menu", client);
 								
 								char sSubTypeName[MAX_DISPLAYNAME_SIZE];
 								char sDataField[MAX_DATAENTRY_SIZE];
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_Deagle);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_Deagle", client);
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_P228);
 								if (g_Game == Game_CSS)
 								{
@@ -3085,16 +3079,16 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 								{
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_P250", client);
 								}
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);								
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);								
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_Glock);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_Glock", client);
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);		
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);		
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_FiveSeven);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_FiveSeven", client);
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);		
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);		
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_Dualies);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_Dualies", client);
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);		
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);		
 								Format(sDataField, sizeof(sDataField), "%d", Pistol_USP);
 								if (g_Game == Game_CSS)
 								{
@@ -3104,41 +3098,41 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 								{
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_P2000", client);
 								}
-								AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+								SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 								if (g_Game == Game_CSGO)
 								{
 									Format(sDataField, sizeof(sDataField), "%d", Pistol_Tec9);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_Tec9", client);
-									AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+									SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 									
 									Format(sDataField, sizeof(sDataField), "%d", Pistol_CZ75);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_CZ75", client);
-									AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+									SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 									
 									Format(sDataField, sizeof(sDataField), "%d", Pistol_USPS);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_USPS", client);
-									AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+									SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 									
 									Format(sDataField, sizeof(sDataField), "%d", Pistol_Revolver);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Pistol_Revolver", client);
-									AddMenuItem(SubWeaponMenu, sDataField, sSubTypeName);
+									SubWeaponMenu.AddItem(sDataField, sSubTypeName);
 								}
 								
-								SetMenuExitBackButton(SubWeaponMenu, true);
-								DisplayMenu(SubWeaponMenu, client, 10);
+								SubWeaponMenu.ExitBackButton = true;
+								SubWeaponMenu.Display(client, 10);
 							}					
 							case LR_NoScope:
 							{
 								if (gShadow_LR_NoScope_Weapon == 2)
 								{
-									Handle NSweaponMenu = CreateMenu(SubLRType_MenuHandler);
-									SetMenuTitle(NSweaponMenu, "%T", "NS Weapon Chooser Menu", client);
+									Menu NSweaponMenu = new Menu(SubLRType_MenuHandler);
+									NSweaponMenu.SetTitle("%T", "NS Weapon Chooser Menu", client);
 
 									char sSubTypeName[MAX_DISPLAYNAME_SIZE];
 									char sDataField[MAX_DATAENTRY_SIZE];
 									Format(sDataField, sizeof(sDataField), "%d", NSW_AWP);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "NSW_AWP", client);	
-									AddMenuItem(NSweaponMenu, sDataField, sSubTypeName);
+									NSweaponMenu.AddItem(sDataField, sSubTypeName);
 									Format(sDataField, sizeof(sDataField), "%d", NSW_Scout);
 									if (g_Game == Game_CSS)
 									{
@@ -3148,7 +3142,7 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 									{
 										Format(sSubTypeName, sizeof(sSubTypeName), "%T", "NSW_SSG08", client);
 									}
-									AddMenuItem(NSweaponMenu, sDataField, sSubTypeName);
+									NSweaponMenu.AddItem(sDataField, sSubTypeName);
 									Format(sDataField, sizeof(sDataField), "%d", NSW_SG550);
 									if (g_Game == Game_CSS)
 									{
@@ -3158,13 +3152,13 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 									{
 										Format(sSubTypeName, sizeof(sSubTypeName), "%T", "NSW_SCAR20", client);
 									}
-									AddMenuItem(NSweaponMenu, sDataField, sSubTypeName);
+									NSweaponMenu.AddItem(sDataField, sSubTypeName);
 									Format(sDataField, sizeof(sDataField), "%d", NSW_G3SG1);
 									Format(sSubTypeName, sizeof(sSubTypeName), "%T", "NSW_G3SG1", client);	
-									AddMenuItem(NSweaponMenu, sDataField, sSubTypeName);
+									NSweaponMenu.AddItem(sDataField, sSubTypeName);
 			
-									SetMenuExitButton(NSweaponMenu, true);
-									DisplayMenu(NSweaponMenu, client, 10);						
+									NSweaponMenu.ExitButton = true;
+									NSweaponMenu.Display(client, 10);						
 								}
 								else
 								{
@@ -3174,13 +3168,13 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 							case LR_Race:
 							{								
 								// create menu for T to choose start point
-								Handle racemenu1 = CreateMenu(RaceStartPointHandler);
-								SetMenuTitle(racemenu1, "%T", "Find a Starting Location", client);
+								Menu racemenu1 = new Menu(RaceStartPointHandler);
+								racemenu1.SetTitle("%T", "Find a Starting Location", client);
 								char sMenuText[MAX_DISPLAYNAME_SIZE];
 								Format(sMenuText, sizeof(sMenuText), "%T", "Use Current Position", client);
-								AddMenuItem(racemenu1, "startloc", sMenuText);
-								SetMenuExitButton(racemenu1, true);
-								DisplayMenu(racemenu1, client, MENU_TIME_FOREVER);						
+								racemenu1.AddItem("startloc", sMenuText);
+								racemenu1.ExitButton = true;
+								racemenu1.Display(client, MENU_TIME_FOREVER);						
 								
 								if (gShadow_LR_Race_NotifyCTs)
 								{
@@ -3196,33 +3190,33 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 							case LR_Rebel:
 							{
 								LastRequest gametype = g_LRLookup[client];
-								int iArrayIndex = PushArrayCell(gH_DArray_LR_Partners, gametype);
-								SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, client, view_as<int>(Block_Prisoner));
-								SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, client, view_as<int>(Block_Guard));
+								int iArrayIndex = gH_DArray_LR_Partners.Push(gametype);
+								gH_DArray_LR_Partners.Set(iArrayIndex, client, view_as<int>(Block_Prisoner));
+								gH_DArray_LR_Partners.Set(iArrayIndex, client, view_as<int>(Block_Guard));
 								g_bInLastRequest[client] = true;
 								g_bIsARebel[client] = true;
 								InitializeGame(iArrayIndex);			
 							}
 							case LR_JumpContest:
 							{
-								Handle SubJumpMenu = CreateMenu(SubLRType_MenuHandler);
-								SetMenuTitle(SubJumpMenu, "%T", "Jump Contest Menu", client);
+								Menu SubJumpMenu = new Menu(SubLRType_MenuHandler);
+								SubJumpMenu.SetTitle("%T", "Jump Contest Menu", client);
 								
 								char sSubTypeName[MAX_DISPLAYNAME_SIZE];
 								char sDataField[MAX_DATAENTRY_SIZE];
 								
 								Format(sDataField, sizeof(sDataField), "%d", Jump_TheMost);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Jump_TheMost", client);
-								AddMenuItem(SubJumpMenu, sDataField, sSubTypeName);
+								SubJumpMenu.AddItem(sDataField, sSubTypeName);
 								Format(sDataField, sizeof(sDataField), "%d", Jump_Farthest);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Jump_Farthest", client);
-								AddMenuItem(SubJumpMenu, sDataField, sSubTypeName);								
+								SubJumpMenu.AddItem(sDataField, sSubTypeName);								
 								Format(sDataField, sizeof(sDataField), "%d", Jump_BrinkOfDeath);
 								Format(sSubTypeName, sizeof(sSubTypeName), "%T", "Jump_BrinkOfDeath", client);
-								AddMenuItem(SubJumpMenu, sDataField, sSubTypeName);		
+								SubJumpMenu.AddItem(sDataField, sSubTypeName);		
 								
-								SetMenuExitBackButton(SubJumpMenu, true);
-								DisplayMenu(SubJumpMenu, client, 10);							
+								SubJumpMenu.ExitBackButton = true;
+								SubJumpMenu.Display(client, 10);							
 							}
 							default:
 							{
@@ -3249,13 +3243,9 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 		{
 			if (client > 0 && client < MAXPLAYERS+1)
 			{
-				if (gH_BuildLR[client] != null)
-				{
-					CloseHandle(gH_BuildLR[client]);
-					gH_BuildLR[client] = null;
-				}
+				delete gH_BuildLR[client];
 			}
-			CloseHandle(menu);
+			delete menu;
 		}
 		case MenuAction_Cancel:
 		{
@@ -3276,8 +3266,8 @@ public int LR_Selection_Handler(Handle menu, MenuAction action, int client, int 
 
 void CreateMainPlayerHandler(int client)
 {
-	Handle playermenu = CreateMenu(MainPlayerHandler);
-	SetMenuTitle(playermenu, "%T", "Choose A Player", client);
+	Menu playermenu = new Menu(MainPlayerHandler);
+	playermenu.SetTitle("%T", "Choose A Player", client);
 
 	int iNumCTsAvailable = 0;
 	int iUserId = 0;
@@ -3291,7 +3281,7 @@ void CreateMainPlayerHandler(int client)
 			Format(sClientName, sizeof(sClientName), "%N", i);
 			iUserId = GetClientUserId(i);
 			Format(sDataField, sizeof(sDataField), "%d", iUserId);
-			AddMenuItem(playermenu, sDataField, sClientName);
+			playermenu.AddItem(sDataField, sClientName);
 			iNumCTsAvailable++;
 		}
 	}
@@ -3301,22 +3291,18 @@ void CreateMainPlayerHandler(int client)
 		PrintToChat(client, CHAT_BANNER, "LR No CTs Available");
 		if (client > 0 && client < MAXPLAYERS+1)
 		{
-			if (gH_BuildLR[client] != null)
-			{
-				CloseHandle(gH_BuildLR[client]);
-				gH_BuildLR[client] = null;
-			}
+			delete gH_BuildLR[client];
 		}
-		CloseHandle(playermenu);
+		delete playermenu;
 	}
 	else
 	{
-		SetMenuExitButton(playermenu, true);
-		DisplayMenu(playermenu, client, gShadow_LR_MenuTime);
+		playermenu.ExitButton = true;
+		playermenu.Display(client, gShadow_LR_MenuTime);
 	}
 }
 
-public int SubLRType_MenuHandler(Handle SelectionMenu, MenuAction action, int client, int iMenuChoice)
+public int SubLRType_MenuHandler(Menu SelectionMenu, MenuAction action, int client, int iMenuChoice)
 {
 	if (action == MenuAction_Select)
 	{
@@ -3327,9 +3313,9 @@ public int SubLRType_MenuHandler(Handle SelectionMenu, MenuAction action, int cl
 				if (IsPlayerAlive(client) && (GetClientTeam(client) == CS_TEAM_T))
 				{
 					char sDataField[MAX_DATAENTRY_SIZE];	
-					GetMenuItem(SelectionMenu, iMenuChoice, sDataField, sizeof(sDataField));
+					SelectionMenu.GetItem(iMenuChoice, sDataField, sizeof(sDataField));
 					int iSelection = StringToInt(sDataField);
-					WritePackCell(gH_BuildLR[client], iSelection);
+					gH_BuildLR[client].WriteCell(iSelection);
 					CreateMainPlayerHandler(client);
 				}
 				else
@@ -3351,17 +3337,13 @@ public int SubLRType_MenuHandler(Handle SelectionMenu, MenuAction action, int cl
 	{
 		if (client > 0 && client < MAXPLAYERS+1)
 		{
-			if (gH_BuildLR[client] != null)
-			{
-				CloseHandle(gH_BuildLR[client]);
-				gH_BuildLR[client] = null;
-			}
+			delete gH_BuildLR[client];
 		}
-		CloseHandle(SelectionMenu);
+		delete SelectionMenu;
 	}
 }
 
-public int RaceEndPointHandler(Handle menu, MenuAction action, int client, int param2)
+public int RaceEndPointHandler(Menu menu, MenuAction action, int client, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -3378,16 +3360,16 @@ public int RaceEndPointHandler(Handle menu, MenuAction action, int client, int p
 						GetClientAbsOrigin(client, f_EndLocation);
 						f_EndLocation[2] += 10;
 						
-						WritePackFloat(gH_BuildLR[client], f_EndLocation[0]);
-						WritePackFloat(gH_BuildLR[client], f_EndLocation[1]);
-						WritePackFloat(gH_BuildLR[client], f_EndLocation[2]);
+						gH_BuildLR[client].WriteFloat(f_EndLocation[0]);
+						gH_BuildLR[client].WriteFloat(f_EndLocation[1]);
+						gH_BuildLR[client].WriteFloat(f_EndLocation[2]);
 						
 						// get start location
 						float f_StartLocation[3];
-						ResetPack(gH_BuildLR[client]);
-						f_StartLocation[0] = ReadPackFloat(gH_BuildLR[client]);
-						f_StartLocation[1] = ReadPackFloat(gH_BuildLR[client]);
-						f_StartLocation[2] = ReadPackFloat(gH_BuildLR[client]);
+						gH_BuildLR[client].Reset();
+						f_StartLocation[0] = gH_BuildLR[client].ReadFloat();
+						f_StartLocation[1] = gH_BuildLR[client].ReadFloat();
+						f_StartLocation[2] = gH_BuildLR[client].ReadFloat();
 						
 						// check how far the requested end is from the start
 						float distanceBetweenPoints = GetVectorDistance(f_StartLocation, f_EndLocation, false);
@@ -3428,17 +3410,13 @@ public int RaceEndPointHandler(Handle menu, MenuAction action, int client, int p
 	{
 		if (client > 0 && client < MAXPLAYERS+1)
 		{
-			if (gH_BuildLR[client] != null)
-			{
-				CloseHandle(gH_BuildLR[client]);
-				gH_BuildLR[client] = null;
-			}
+			delete gH_BuildLR[client];
 		}
-		CloseHandle(menu);
+		delete menu;
 	}
 }
 
-public int RaceStartPointHandler(Handle menu, MenuAction action, int client, int param2)
+public int RaceStartPointHandler(Menu menu, MenuAction action, int client, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -3459,9 +3437,9 @@ public int RaceStartPointHandler(Handle menu, MenuAction action, int client, int
 						TE_SendToAll();
 						
 						// write start point
-						WritePackFloat(gH_BuildLR[client], f_StartPoint[0]);
-						WritePackFloat(gH_BuildLR[client], f_StartPoint[1]);
-						WritePackFloat(gH_BuildLR[client], f_StartPoint[2]);
+						gH_BuildLR[client].WriteFloat(f_StartPoint[0]);
+						gH_BuildLR[client].WriteFloat(f_StartPoint[1]);
+						gH_BuildLR[client].WriteFloat(f_StartPoint[2]);
 						
 						CreateRaceEndPointMenu(client);
 					}
@@ -3489,28 +3467,24 @@ public int RaceStartPointHandler(Handle menu, MenuAction action, int client, int
 	{
 		if (client > 0 && client < MAXPLAYERS+1)
 		{
-			if (gH_BuildLR[client] != null)
-			{
-				CloseHandle(gH_BuildLR[client]);
-				gH_BuildLR[client] = null;
-			}
+			delete gH_BuildLR[client];
 		}
-		CloseHandle(menu);
+		delete menu;
 	}
 }
 
 void CreateRaceEndPointMenu(int client)
 {
-	Handle EndPointMenu = CreateMenu(RaceEndPointHandler);
-	SetMenuTitle(EndPointMenu, "%T", "Choose an End Point", client);
+	Menu EndPointMenu = new Menu(RaceEndPointHandler);
+	EndPointMenu.SetTitle("%T", "Choose an End Point", client);
 	char sMenuText[MAX_DISPLAYNAME_SIZE];
 	Format (sMenuText, sizeof(sMenuText), "%T", "Use Current Position", client);
-	AddMenuItem(EndPointMenu, "endpoint", sMenuText);
-	SetMenuExitButton(EndPointMenu, true);
-	DisplayMenu(EndPointMenu, client, MENU_TIME_FOREVER);
+	EndPointMenu.AddItem("endpoint", sMenuText);
+	EndPointMenu.ExitButton = true;
+	EndPointMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, int iButtonChoice)
+public int MainPlayerHandler(Menu playermenu, MenuAction action, int client, int iButtonChoice)
 {
 	switch (action)
 	{
@@ -3523,7 +3497,7 @@ public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, i
 					if (IsPlayerAlive(client) && (GetClientTeam(client) == CS_TEAM_T))
 					{
 						char sData[MAX_DATAENTRY_SIZE];
-						GetMenuItem(playermenu, iButtonChoice, sData, sizeof(sData));
+						playermenu.GetItem(iButtonChoice, sData, sizeof(sData));
 						int ClientIdxOfCT = GetClientOfUserId(StringToInt(sData));
 						
 						if (ClientIdxOfCT && IsClientInGame(ClientIdxOfCT) && IsPlayerAlive(ClientIdxOfCT) && (GetClientTeam(ClientIdxOfCT) == CS_TEAM_CT))
@@ -3562,18 +3536,18 @@ public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, i
 													else if (IsLastRequestAutoStart(game))
 													{
 														// lock in this LR pair
-														int iArrayIndex = PushArrayCell(gH_DArray_LR_Partners, game);
-														SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, client, view_as<int>(Block_Prisoner));
-														SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, ClientIdxOfCT, view_as<int>(Block_Guard));
+														int iArrayIndex = gH_DArray_LR_Partners.Push(game);
+														gH_DArray_LR_Partners.Set(iArrayIndex, client, view_as<int>(Block_Prisoner));
+														gH_DArray_LR_Partners.Set(iArrayIndex, ClientIdxOfCT, view_as<int>(Block_Guard));
 														g_bInLastRequest[client] = true;
 														g_bInLastRequest[ClientIdxOfCT] = true;
 														InitializeGame(iArrayIndex);
 													}
 													else
 													{
-														int iArrayIndex = PushArrayCell(gH_DArray_LR_Partners, game);
-														SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, client, view_as<int>(Block_Prisoner));
-														SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, ClientIdxOfCT, view_as<int>(Block_Guard));
+														int iArrayIndex = gH_DArray_LR_Partners.Push(game);
+														gH_DArray_LR_Partners.Set(iArrayIndex, client, view_as<int>(Block_Prisoner));
+														gH_DArray_LR_Partners.Set(iArrayIndex, ClientIdxOfCT, view_as<int>(Block_Guard));
 														InitializeGame(iArrayIndex);
 													}
 												}
@@ -3585,7 +3559,7 @@ public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, i
 											else
 											{
 												// if rebel, send a menu to the CT asking for permission
-												Handle askmenu = CreateMenu(MainAskHandler);
+												Menu askmenu = new Menu(MainAskHandler);
 												char lrname[MAX_DISPLAYNAME_SIZE];
 												if (g_LRLookup[client] < LastRequest)
 												{
@@ -3593,20 +3567,20 @@ public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, i
 												}
 												else
 												{
-													GetArrayString(gH_DArray_LR_CustomNames, view_as<int>(g_LRLookup[client] - LastRequest), lrname, MAX_DISPLAYNAME_SIZE);
+													gH_DArray_LR_CustomNames.GetString(view_as<int>(g_LRLookup[client] - LastRequest), lrname, MAX_DISPLAYNAME_SIZE);
 												}
-												SetMenuTitle(askmenu, "%T", "Rebel Ask CT For LR", ClientIdxOfCT, client, lrname);
+												askmenu.SetTitle("%T", "Rebel Ask CT For LR", ClientIdxOfCT, client, lrname);
 		
 												char yes[8];
 												char no[8];
 												Format(yes, sizeof(yes), "%T", "Yes", ClientIdxOfCT);
 												Format(no, sizeof(no), "%T", "No", ClientIdxOfCT);
-												AddMenuItem(askmenu, "yes", yes);
-												AddMenuItem(askmenu, "no", no);
+												askmenu.AddItem("yes", yes);
+												askmenu.AddItem("no", no);
 		
 												g_LR_PermissionLookup[ClientIdxOfCT] = client;
-												SetMenuExitButton(askmenu, true);
-												DisplayMenu(askmenu, ClientIdxOfCT, 6);
+												askmenu.ExitButton = true;
+												askmenu.Display(ClientIdxOfCT, 6);
 		
 												PrintToChat(client, CHAT_BANNER, "Asking For Permission", ClientIdxOfCT);
 											}
@@ -3655,18 +3629,14 @@ public int MainPlayerHandler(Handle playermenu, MenuAction action, int client, i
 		{
 			if (client > 0 && client < MAXPLAYERS+1)
 			{
-				if (gH_BuildLR[client] != null)
-				{
-					CloseHandle(gH_BuildLR[client]);
-					gH_BuildLR[client] = null;
-				}
+				delete gH_BuildLR[client];
 			}
-			CloseHandle(playermenu);
+			delete playermenu;
 		}
 	}
 }
 
-public int MainAskHandler(Handle askmenu, MenuAction action, int client, int param2)
+public int MainAskHandler(Menu askmenu, MenuAction action, int client, int param2)
 {
 	switch (action)
 	{
@@ -3689,9 +3659,9 @@ public int MainAskHandler(Handle askmenu, MenuAction action, int client, int par
 									LastRequest game = g_LRLookup[g_LR_PermissionLookup[client]];
 									
 									// lock in this LR pair
-									int iArrayIndex = PushArrayCell(gH_DArray_LR_Partners, game);
-									SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, g_LR_PermissionLookup[client], view_as<int>(Block_Prisoner));
-									SetArrayCell(gH_DArray_LR_Partners, iArrayIndex, client, view_as<int>(Block_Guard));
+									int iArrayIndex = gH_DArray_LR_Partners.Push(game);
+									gH_DArray_LR_Partners.Set(iArrayIndex, g_LR_PermissionLookup[client], view_as<int>(Block_Prisoner));
+									gH_DArray_LR_Partners.Set(iArrayIndex, client, view_as<int>(Block_Guard));
 									InitializeGame(iArrayIndex);
 									
 									if(IsLastRequestAutoStart(game))
@@ -3741,13 +3711,9 @@ public int MainAskHandler(Handle askmenu, MenuAction action, int client, int par
 		{
 			if (client > 0 && client < MAXPLAYERS+1)
 			{
-				if (gH_BuildLR[g_LR_PermissionLookup[client]] != null)
-				{
-					CloseHandle(gH_BuildLR[g_LR_PermissionLookup[client]]);
-					gH_BuildLR[g_LR_PermissionLookup[client]] = null;
-				}
+				delete gH_BuildLR[g_LR_PermissionLookup[client]];
 			}
-			CloseHandle(askmenu);
+			delete askmenu;
 		}
 	}
 }
@@ -3755,9 +3721,9 @@ public int MainAskHandler(Handle askmenu, MenuAction action, int client, int par
 void InitializeGame(int iPartnersIndex)
 {
 	// grab the info
-	LastRequest selection = GetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, view_as<int>(Block_LRType));
-	int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, view_as<int>(Block_Prisoner));
-	int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, view_as<int>(Block_Guard));
+	LastRequest selection = gH_DArray_LR_Partners.Get(iPartnersIndex, view_as<int>(Block_LRType));
+	int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(iPartnersIndex, view_as<int>(Block_Prisoner));
+	int LR_Player_Guard = gH_DArray_LR_Partners.Get(iPartnersIndex, view_as<int>(Block_Guard));
 	
 	// log the event for stats engines
 	if (selection < LastRequest)
@@ -3767,7 +3733,7 @@ void InitializeGame(int iPartnersIndex)
 	else
 	{
 		char LR_Name[MAX_DISPLAYNAME_SIZE];
-		GetArrayString(gH_DArray_LR_CustomNames, view_as<int>(selection - LastRequest), LR_Name, MAX_DISPLAYNAME_SIZE);
+		gH_DArray_LR_CustomNames.GetString(view_as<int>(selection - LastRequest), LR_Name, MAX_DISPLAYNAME_SIZE);
 		LogToGame("\"%L\" started a LR game (\"%s\") with \"%L\"", LR_Player_Prisoner, LR_Name, LR_Player_Guard);
 	}
 	
@@ -3786,10 +3752,10 @@ void InitializeGame(int iPartnersIndex)
 			StripAllWeapons(LR_Player_Guard);
 
 			KnifeType KnifeChoice;
-			ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-			KnifeChoice = ReadPackCell(gH_BuildLR[LR_Player_Prisoner]);
+			gH_BuildLR[LR_Player_Prisoner].Reset();
+			KnifeChoice = gH_BuildLR[LR_Player_Prisoner].ReadCell();
 			
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, KnifeChoice, view_as<int>(Block_Global1));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, KnifeChoice, view_as<int>(Block_Global1));
 			
 			switch (KnifeChoice)
 			{
@@ -3829,8 +3795,8 @@ void InitializeGame(int iPartnersIndex)
 			}
 			
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);
 
 			// give knives
 			GivePlayerItem(LR_Player_Prisoner, "weapon_knife");
@@ -3846,8 +3812,8 @@ void InitializeGame(int iPartnersIndex)
 
 			// grab weapon choice
 			PistolWeapon PistolChoice;
-			ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-			PistolChoice = ReadPackCell(gH_BuildLR[LR_Player_Prisoner]);
+			gH_BuildLR[LR_Player_Prisoner].Reset();
+			PistolChoice = gH_BuildLR[LR_Player_Prisoner].ReadCell();
 	
 			int Pistol_Prisoner, Pistol_Guard;
 			switch (PistolChoice)
@@ -3928,8 +3894,8 @@ void InitializeGame(int iPartnersIndex)
 			
 			GivePlayerItem(LR_Player_Prisoner, "weapon_knife");
 			GivePlayerItem(LR_Player_Guard, "weapon_knife");
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_Prisoner, view_as<int>(Block_PrisonerData));
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_Guard, view_as<int>(Block_GuardData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_Prisoner, view_as<int>(Block_PrisonerData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_Guard, view_as<int>(Block_GuardData));
 			
 			PrintToChatAll(CHAT_BANNER, "LR S4S Start", LR_Player_Prisoner, LR_Player_Guard);
 			
@@ -3939,7 +3905,7 @@ void InitializeGame(int iPartnersIndex)
 			{
 				SetEntData(Pistol_Prisoner, g_Offset_Clip1, 0);
 				SetEntData(Pistol_Guard, g_Offset_Clip1, 1);
-				SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, LR_Player_Prisoner, view_as<int>(Block_Global1));
+				gH_DArray_LR_Partners.Set(iPartnersIndex, LR_Player_Prisoner, view_as<int>(Block_Global1));
 				if (gShadow_SendGlobalMsgs)
 				{
 					PrintToChatAll(CHAT_BANNER, "Randomly Chose First Player", LR_Player_Guard);
@@ -3954,7 +3920,7 @@ void InitializeGame(int iPartnersIndex)
 			{
 				SetEntData(Pistol_Prisoner, g_Offset_Clip1, 1);
 				SetEntData(Pistol_Guard, g_Offset_Clip1, 0);			
-				SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, LR_Player_Guard, view_as<int>(Block_Global1));
+				gH_DArray_LR_Partners.Set(iPartnersIndex, LR_Player_Guard, view_as<int>(Block_Global1));
 				if (gShadow_SendGlobalMsgs)
 				{
 					PrintToChatAll(CHAT_BANNER, "Randomly Chose First Player", LR_Player_Prisoner);
@@ -3980,36 +3946,36 @@ void InitializeGame(int iPartnersIndex)
 			}
 
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);
 		}
 		case LR_GunToss:
 		{
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, false, view_as<int>(Block_Global1)); // GTp1dropped
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, false, view_as<int>(Block_Global2)); // GTp2dropped
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, false, view_as<int>(Block_Global3)); // GTp1done
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, false, view_as<int>(Block_Global4)); // GTp2done
+			gH_DArray_LR_Partners.Set(iPartnersIndex, false, view_as<int>(Block_Global1)); // GTp1dropped
+			gH_DArray_LR_Partners.Set(iPartnersIndex, false, view_as<int>(Block_Global2)); // GTp2dropped
+			gH_DArray_LR_Partners.Set(iPartnersIndex, false, view_as<int>(Block_Global3)); // GTp1done
+			gH_DArray_LR_Partners.Set(iPartnersIndex, false, view_as<int>(Block_Global4)); // GTp2done
 			
-			Handle DataPackPosition = CreateDataPack();
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, DataPackPosition, view_as<int>(Block_DataPackHandle)); // position handle
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // GTdeagle1lastpos
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // GTdeagle2lastpos
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // 
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // 
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // player 1 last jump position
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0);
-			WritePackFloat(DataPackPosition, 0.0); // player 2 last jump position
+			DataPack DataPackPosition = new DataPack();
+			gH_DArray_LR_Partners.Set(iPartnersIndex, DataPackPosition, view_as<int>(Block_DataPackHandle)); // position handle
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // GTdeagle1lastpos
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // GTdeagle2lastpos
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // 
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // 
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // player 1 last jump position
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0);
+			DataPackPosition.WriteFloat(0.0); // player 2 last jump position
 
 			StripAllWeapons(LR_Player_Prisoner);
 			StripAllWeapons(LR_Player_Guard);
@@ -4021,8 +3987,8 @@ void InitializeGame(int iPartnersIndex)
 			int GTdeagle2 = GivePlayerItem(LR_Player_Guard, "weapon_deagle");
 			int Prisoner_GunEntRef = EntIndexToEntRef(GTdeagle1);
 			int Guard_GunEntRef = EntIndexToEntRef(GTdeagle2);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Prisoner_GunEntRef, view_as<int>(Block_PrisonerData));
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Guard_GunEntRef, view_as<int>(Block_GuardData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Prisoner_GunEntRef, view_as<int>(Block_PrisonerData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Guard_GunEntRef, view_as<int>(Block_GuardData));
 
 			// set ammo (Clip2) 0 -- we don't need any extra ammo...
 			if(g_Game == Game_CSGO)
@@ -4049,8 +4015,8 @@ void InitializeGame(int iPartnersIndex)
 			}
 			
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);
 
 			// announce LR
 			PrintToChatAll(CHAT_BANNER, "LR GT Start", LR_Player_Prisoner, LR_Player_Guard);
@@ -4081,11 +4047,11 @@ void InitializeGame(int iPartnersIndex)
 
 			// always give potato to the prisoner
 			int potatoClient = LR_Player_Prisoner;
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, potatoClient, view_as<int>(Block_Global1)); // HPloser
+			gH_DArray_LR_Partners.Set(iPartnersIndex, potatoClient, view_as<int>(Block_Global1)); // HPloser
 
 			// create the potato deagle
 			int HPdeagle = GivePlayerItem(potatoClient, "weapon_deagle");
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, HPdeagle, view_as<int>(Block_Global4));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, HPdeagle, view_as<int>(Block_Global4));
 			EquipPlayerWeapon(potatoClient, HPdeagle);
 			SetEntPropEnt(potatoClient, Prop_Send, "m_hActiveWeapon", HPdeagle);
 
@@ -4131,7 +4097,7 @@ void InitializeGame(int iPartnersIndex)
 			
 			// create 'unique' ID for this hot potato
 			int uniqueID = GetRandomInt(1, 31337);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, uniqueID, view_as<int>(Block_Global3));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, uniqueID, view_as<int>(Block_Global3));
 			
 			// create timer to end hot potato
 			float rndEnd = GetRandomFloat(gShadow_LR_HotPotato_MinTime, gShadow_LR_HotPotato_MaxTime);
@@ -4182,8 +4148,8 @@ void InitializeGame(int iPartnersIndex)
 			}
 
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 1);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 1);
+			SetEntityHealth(LR_Player_Prisoner, 1);
+			SetEntityHealth(LR_Player_Guard, 1);
 			SetEntData(LR_Player_Prisoner, g_Offset_Armor, 0);
 			SetEntData(LR_Player_Guard, g_Offset_Armor, 0);
 
@@ -4215,8 +4181,8 @@ void InitializeGame(int iPartnersIndex)
 			StripAllWeapons(LR_Player_Guard);
 
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);
 
 			GivePlayerItem(LR_Player_Prisoner, "weapon_knife");
 			GivePlayerItem(LR_Player_Guard, "weapon_knife");
@@ -4234,8 +4200,8 @@ void InitializeGame(int iPartnersIndex)
 				}
 				case 2:
 				{
-					ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-					WeaponChoice = ReadPackCell(gH_BuildLR[LR_Player_Prisoner]);				
+					gH_BuildLR[LR_Player_Prisoner].Reset();
+					WeaponChoice = gH_BuildLR[LR_Player_Prisoner].ReadCell();
 				}
 				case 3:
 				{
@@ -4247,13 +4213,13 @@ void InitializeGame(int iPartnersIndex)
 				}
 			}
 			
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, WeaponChoice, view_as<int>(Block_Global2));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, WeaponChoice, view_as<int>(Block_Global2));
 			
 			PrintToChatAll(CHAT_BANNER, "LR NS Start", LR_Player_Prisoner, LR_Player_Guard);
 			
 			if (gShadow_LR_NoScope_Delay > 0)
 			{
-				SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, gShadow_LR_NoScope_Delay, view_as<int>(Block_Global1));
+				gH_DArray_LR_Partners.Set(iPartnersIndex, gShadow_LR_NoScope_Delay, view_as<int>(Block_Global1));
 				if (g_CountdownTimer == null)
 				{
 					g_CountdownTimer = CreateTimer(1.0, Timer_Countdown, iPartnersIndex, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
@@ -4328,37 +4294,37 @@ void InitializeGame(int iPartnersIndex)
 		}
 		case LR_RockPaperScissors:
 		{
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, -1, view_as<int>(Block_Global1));
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, -1, view_as<int>(Block_Global2));
-			Handle rpsmenu1 = CreateMenu(RPSmenuHandler);
-			SetMenuTitle(rpsmenu1, "%T", "Rock Paper Scissors", LR_Player_Prisoner);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, rpsmenu1, view_as<int>(Block_PrisonerData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, -1, view_as<int>(Block_Global1));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, -1, view_as<int>(Block_Global2));
+			Menu rpsmenu1 = new Menu(RPSmenuHandler);
+			rpsmenu1.SetTitle("%T", "Rock Paper Scissors", LR_Player_Prisoner);
+			gH_DArray_LR_Partners.Set(iPartnersIndex, rpsmenu1, view_as<int>(Block_PrisonerData));
 
 			char r1[32], p1[64], s1[64];
 			Format(r1, sizeof(r1), "%T", "Rock", LR_Player_Prisoner);
 			Format(p1, sizeof(p1), "%T", "Paper", LR_Player_Prisoner);
 			Format(s1, sizeof(s1), "%T", "Scissors", LR_Player_Prisoner);
-			AddMenuItem(rpsmenu1, "0", r1);
-			AddMenuItem(rpsmenu1, "1", p1);
-			AddMenuItem(rpsmenu1, "2", s1);
+			rpsmenu1.AddItem("0", r1);
+			rpsmenu1.AddItem("1", p1);
+			rpsmenu1.AddItem("2", s1);
 
-			SetMenuExitButton(rpsmenu1, true);
-			DisplayMenu(rpsmenu1, LR_Player_Prisoner, 15);
+			rpsmenu1.ExitButton = true;
+			rpsmenu1.Display(LR_Player_Prisoner, 15);
 
-			Handle rpsmenu2 = CreateMenu(RPSmenuHandler);
-			SetMenuTitle(rpsmenu2, "%T", "Rock Paper Scissors", LR_Player_Guard);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, rpsmenu2, view_as<int>(Block_GuardData));
+			Menu rpsmenu2 = new Menu(RPSmenuHandler);
+			rpsmenu2.SetTitle("%T", "Rock Paper Scissors", LR_Player_Guard);
+			gH_DArray_LR_Partners.Set(iPartnersIndex, rpsmenu2, view_as<int>(Block_GuardData));
 
 			char r2[32], p2[64], s2[64];
 			Format(r2, sizeof(r2), "%T", "Rock", LR_Player_Guard);
 			Format(p2, sizeof(p2), "%T", "Paper", LR_Player_Guard);
 			Format(s2, sizeof(s2), "%T", "Scissors", LR_Player_Guard);
-			AddMenuItem(rpsmenu2, "0", r2);
-			AddMenuItem(rpsmenu2, "1", p2);
-			AddMenuItem(rpsmenu2, "2", s2);
+			rpsmenu2.AddItem("0", r2);
+			rpsmenu2.AddItem("1", p2);
+			rpsmenu2.AddItem("2", s2);
 
-			SetMenuExitButton(rpsmenu2, true);
-			DisplayMenu(rpsmenu2, LR_Player_Guard, 15);
+			rpsmenu2.ExitButton = true;
+			rpsmenu2.Display(LR_Player_Guard, 15);
 
 			// announce LR
 			PrintToChatAll(CHAT_BANNER, "LR RPS Start", LR_Player_Prisoner, LR_Player_Guard);
@@ -4408,7 +4374,7 @@ void InitializeGame(int iPartnersIndex)
 			}
 			
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, numCTsAlive*100+25);
+			SetEntityHealth(LR_Player_Prisoner, numCTsAlive*100+25);
 			
 			// announce LR
 			PrintToChatAll(CHAT_BANNER, "LR Has Chosen to Rebel!", LR_Player_Prisoner);
@@ -4418,16 +4384,16 @@ void InitializeGame(int iPartnersIndex)
 			StripAllWeapons(LR_Player_Prisoner);
 			StripAllWeapons(LR_Player_Guard);
 			
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_Global2)); // M4MroundsFired
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_Global3)); // M4Mammo
+			gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_Global2)); // M4MroundsFired
+			gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_Global3)); // M4Mammo
 			
 			// give knives and deagles
 			GivePlayerItem(LR_Player_Prisoner, "weapon_knife");
 			GivePlayerItem(LR_Player_Guard, "weapon_knife");
 			// grab weapon choice
 			int PistolChoice;
-			ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-			PistolChoice = ReadPackCell(gH_BuildLR[LR_Player_Prisoner]);
+			gH_BuildLR[LR_Player_Prisoner].Reset();
+			PistolChoice = gH_BuildLR[LR_Player_Prisoner].ReadCell();
 	
 			int Pistol_Prisoner, Pistol_Guard;
 			switch (PistolChoice)
@@ -4506,8 +4472,8 @@ void InitializeGame(int iPartnersIndex)
 				}
 			}
 
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_Prisoner, view_as<int>(Block_PrisonerData));
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_Guard, view_as<int>(Block_GuardData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_Prisoner, view_as<int>(Block_PrisonerData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_Guard, view_as<int>(Block_GuardData));
 			
 			PrintToChatAll(CHAT_BANNER, "LR Mag4Mag Start", LR_Player_Prisoner, LR_Player_Guard);
 			
@@ -4528,7 +4494,7 @@ void InitializeGame(int iPartnersIndex)
 					PrintToChat(LR_Player_Prisoner, CHAT_BANNER, "Randomly Chose First Player", LR_Player_Guard);
 					PrintToChat(LR_Player_Guard, CHAT_BANNER, "Randomly Chose First Player", LR_Player_Guard);
 				}
-				SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, LR_Player_Guard, view_as<int>(Block_Global1)); // S4Slastshot
+				gH_DArray_LR_Partners.Set(iPartnersIndex, LR_Player_Guard, view_as<int>(Block_Global1)); // S4Slastshot
 			}
 			else
 			{
@@ -4543,12 +4509,12 @@ void InitializeGame(int iPartnersIndex)
 					PrintToChat(LR_Player_Prisoner, CHAT_BANNER, "Randomly Chose First Player", LR_Player_Prisoner);
 					PrintToChat(LR_Player_Guard, CHAT_BANNER, "Randomly Chose First Player", LR_Player_Prisoner);
 				}
-				SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, LR_Player_Prisoner, view_as<int>(Block_Global1));
+				gH_DArray_LR_Partners.Set(iPartnersIndex, LR_Player_Prisoner, view_as<int>(Block_Global1));
 			}
 		
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);
 
 			if(g_Game == Game_CSGO)
 			{
@@ -4578,23 +4544,23 @@ void InitializeGame(int iPartnersIndex)
 			
 			//  teleport both players to the start of the race
 			float f_StartLocation[3], f_EndLocation[3];
-			ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-			f_StartLocation[0] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			f_StartLocation[1] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			f_StartLocation[2] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			f_EndLocation[0] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			f_EndLocation[1] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			f_EndLocation[2] = ReadPackFloat(gH_BuildLR[LR_Player_Prisoner]);
-			Handle ThisDataPack = CreateDataPack();
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, ThisDataPack, 9);
-			WritePackFloat(ThisDataPack, f_EndLocation[0]);
-			WritePackFloat(ThisDataPack, f_EndLocation[1]);
-			WritePackFloat(ThisDataPack, f_EndLocation[2]);
+			gH_BuildLR[LR_Player_Prisoner].Reset();
+			f_StartLocation[0] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			f_StartLocation[1] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			f_StartLocation[2] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			f_EndLocation[0] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			f_EndLocation[1] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			f_EndLocation[2] = gH_BuildLR[LR_Player_Prisoner].ReadFloat();
+			DataPack ThisDataPack = new DataPack();
+			gH_DArray_LR_Partners.Set(iPartnersIndex, ThisDataPack, 9);
+			ThisDataPack.WriteFloat(f_EndLocation[0]);
+			ThisDataPack.WriteFloat(f_EndLocation[1]);
+			ThisDataPack.WriteFloat(f_EndLocation[2]);
 			
 			TeleportEntity(LR_Player_Prisoner, f_StartLocation, NULL_VECTOR, view_as<float>({0.0, 0.0, 0.0}));
 			TeleportEntity(LR_Player_Guard, f_StartLocation, NULL_VECTOR, view_as<float>({0.0, 0.0, 0.0}));
 			
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 3, view_as<int>(Block_Global1));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, 3, view_as<int>(Block_Global1));
 			// fire timer for race begin countdown
 			if (g_CountdownTimer == null)
 			{
@@ -4629,8 +4595,8 @@ void InitializeGame(int iPartnersIndex)
 			int Pistol_Guard = GivePlayerItem(LR_Player_Guard, "weapon_deagle");
 			int Pistol_PrisonerEntRef = EntIndexToEntRef(Pistol_Prisoner);
 			int Pistol_GuardEntRef = EntIndexToEntRef(Pistol_Guard);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_PrisonerEntRef, view_as<int>(Block_PrisonerData));
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Pistol_GuardEntRef, view_as<int>(Block_GuardData));		
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_PrisonerEntRef, view_as<int>(Block_PrisonerData));
+			gH_DArray_LR_Partners.Set(iPartnersIndex, Pistol_GuardEntRef, view_as<int>(Block_GuardData));		
 				
 			PrintToChatAll(CHAT_BANNER, "LR RR Start", LR_Player_Prisoner, LR_Player_Guard);
 			
@@ -4678,25 +4644,25 @@ void InitializeGame(int iPartnersIndex)
 			}
 
 			// set HP
-			SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-			SetEntData(LR_Player_Guard, g_Offset_Health, 100);			
+			SetEntityHealth(LR_Player_Prisoner, 100);
+			SetEntityHealth(LR_Player_Guard, 100);			
 		}
 		case LR_JumpContest:
 		{		
 			int JumpChoice;
-			ResetPack(gH_BuildLR[LR_Player_Prisoner]);
-			JumpChoice = ReadPackCell(gH_BuildLR[LR_Player_Prisoner]);
-			SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, JumpChoice, view_as<int>(Block_Global2));
+			gH_BuildLR[LR_Player_Prisoner].Reset();
+			JumpChoice = gH_BuildLR[LR_Player_Prisoner].ReadCell();
+			gH_DArray_LR_Partners.Set(iPartnersIndex, JumpChoice, view_as<int>(Block_Global2));
 			
 			switch (JumpChoice)
 			{
 				case Jump_TheMost:
 				{
 					// reset jump counts
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_PrisonerData));
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_GuardData));
+					gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_PrisonerData));
+					gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_GuardData));
 					// set countdown timer
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 3, view_as<int>(Block_Global1));
+					gH_DArray_LR_Partners.Set(iPartnersIndex, 3, view_as<int>(Block_Global1));
 					
 					if (g_CountdownTimer == null)
 					{
@@ -4721,11 +4687,11 @@ void InitializeGame(int iPartnersIndex)
 					GetClientAbsOrigin(LR_Player_Prisoner, Prisoner_Position);
 
 					// we only need the Z-axis
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, Prisoner_Position[2], view_as<int>(Block_Global3));					
+					gH_DArray_LR_Partners.Set(iPartnersIndex, Prisoner_Position[2], view_as<int>(Block_Global3));					
 
 					// set jumped bools to false					
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_PrisonerData));
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, 0, view_as<int>(Block_GuardData));					
+					gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_PrisonerData));
+					gH_DArray_LR_Partners.Set(iPartnersIndex, 0, view_as<int>(Block_GuardData));					
 					
 					PrintToChatAll(CHAT_BANNER, "Start Farthest Jump", LR_Player_Prisoner, LR_Player_Guard);
 					
@@ -4735,22 +4701,22 @@ void InitializeGame(int iPartnersIndex)
 						g_FarthestJumpTimer = CreateTimer(0.1, Timer_FarthestJumpDetector, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 					}
 					
-					Handle JumpPackPosition = CreateDataPack();
-					SetArrayCell(gH_DArray_LR_Partners, iPartnersIndex, JumpPackPosition, view_as<int>(Block_DataPackHandle)); // position handle
-					WritePackFloat(JumpPackPosition, 0.0);
-					WritePackFloat(JumpPackPosition, 0.0);
-					WritePackFloat(JumpPackPosition, 0.0); // Prisoner Jump Position
-					WritePackFloat(JumpPackPosition, 0.0);
-					WritePackFloat(JumpPackPosition, 0.0);
-					WritePackFloat(JumpPackPosition, 0.0); // Guard Jump Position					
+					DataPack JumpPackPosition = new DataPack();
+					gH_DArray_LR_Partners.Set(iPartnersIndex, JumpPackPosition, view_as<int>(Block_DataPackHandle)); // position handle
+					JumpPackPosition.WriteFloat(0.0);
+					JumpPackPosition.WriteFloat(0.0);
+					JumpPackPosition.WriteFloat(0.0); // Prisoner Jump Position
+					JumpPackPosition.WriteFloat(0.0);
+					JumpPackPosition.WriteFloat(0.0);
+					JumpPackPosition.WriteFloat(0.0); // Guard Jump Position					
 				}
 				case Jump_BrinkOfDeath:
 				{
 					StripAllWeapons(LR_Player_Prisoner);
 					StripAllWeapons(LR_Player_Guard);
 
-					SetEntData(LR_Player_Prisoner, g_Offset_Health, 100);
-					SetEntData(LR_Player_Guard, g_Offset_Health, 100);
+					SetEntityHealth(LR_Player_Prisoner, 100);
+					SetEntityHealth(LR_Player_Guard, 100);
 					
 					if (!gShadow_NoBlock)
 					{
@@ -4801,7 +4767,7 @@ void InitializeGame(int iPartnersIndex)
 		// Close datapack
 		if (gH_BuildLR[LR_Player_Prisoner] != null)
 		{
-			CloseHandle(gH_BuildLR[LR_Player_Prisoner]);		
+			delete gH_BuildLR[LR_Player_Prisoner];
 		}
 		gH_BuildLR[LR_Player_Prisoner] = null;
 
@@ -4816,22 +4782,22 @@ void InitializeGame(int iPartnersIndex)
 
 public Action Timer_FarthestJumpDetector(Handle timer)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_JumpContest)
 			{
-				JumpContest subType = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
+				JumpContest subType = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
 				if (subType == Jump_Farthest)
 				{								
-					int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-					int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));					
-					float f_HeightOfGroundLevel = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));
-					bool Prisoner_Jumped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
-					bool Guard_Jumped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
+					int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+					int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));					
+					float f_HeightOfGroundLevel = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));
+					bool Prisoner_Jumped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
+					bool Guard_Jumped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
 					bool Prisoner_Landed = false;
 					bool Guard_Landed = false;
 
@@ -4847,14 +4813,14 @@ public Action Timer_FarthestJumpDetector(Handle timer)
 						{
 							if (Prisoner_Position[2] < (f_HeightOfGroundLevel - 60.0))
 							{
-								SetArrayCell(gH_DArray_LR_Partners, idx, 1, view_as<int>(Block_PrisonerData));
+								gH_DArray_LR_Partners.Set(idx, 1, view_as<int>(Block_PrisonerData));
 							}
 						}
 						else
 						{
 							if (Prisoner_Position[2] < f_HeightOfGroundLevel)
 							{
-								SetArrayCell(gH_DArray_LR_Partners, idx, 1, view_as<int>(Block_PrisonerData));
+								gH_DArray_LR_Partners.Set(idx, 1, view_as<int>(Block_PrisonerData));
 							}
 						}
 					}
@@ -4868,14 +4834,14 @@ public Action Timer_FarthestJumpDetector(Handle timer)
 						{
 							if (Guard_Position[2] < (f_HeightOfGroundLevel - 60.0))
 							{
-								SetArrayCell(gH_DArray_LR_Partners, idx, 1, view_as<int>(Block_GuardData));
+								gH_DArray_LR_Partners.Set(idx, 1, view_as<int>(Block_GuardData));
 							}
 						}
 						else
 						{
 							if (Guard_Position[2] < f_HeightOfGroundLevel)
 							{
-								SetArrayCell(gH_DArray_LR_Partners, idx, 1, view_as<int>(Block_GuardData));
+								gH_DArray_LR_Partners.Set(idx, 1, view_as<int>(Block_GuardData));
 							}
 						}
 					}
@@ -4895,15 +4861,15 @@ public Action Timer_FarthestJumpDetector(Handle timer)
 					
 					if (Prisoner_Landed && Guard_Landed)
 					{
-						Handle JumpPackPosition = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));
+						DataPack JumpPackPosition = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));
 						float Prisoner_JumpPosition[3], Guard_JumpPosition[3];
-						ResetPack(JumpPackPosition);
-						Prisoner_JumpPosition[0] = ReadPackFloat(JumpPackPosition);
-						Prisoner_JumpPosition[1] = ReadPackFloat(JumpPackPosition);
-						Prisoner_JumpPosition[2] = ReadPackFloat(JumpPackPosition);
-						Guard_JumpPosition[0] = ReadPackFloat(JumpPackPosition);
-						Guard_JumpPosition[1] = ReadPackFloat(JumpPackPosition);
-						Guard_JumpPosition[2] = ReadPackFloat(JumpPackPosition);						
+						JumpPackPosition.Reset();
+						Prisoner_JumpPosition[0] = JumpPackPosition.ReadFloat();
+						Prisoner_JumpPosition[1] = JumpPackPosition.ReadFloat();
+						Prisoner_JumpPosition[2] = JumpPackPosition.ReadFloat();
+						Guard_JumpPosition[0] = JumpPackPosition.ReadFloat();
+						Guard_JumpPosition[1] = JumpPackPosition.ReadFloat();
+						Guard_JumpPosition[2] = JumpPackPosition.ReadFloat();						
 
 						// determine who is farthest from their start position
 						float Prisoner_Distance = GetVectorDistance(Prisoner_Position, Prisoner_JumpPosition);
@@ -4935,23 +4901,23 @@ public Action Timer_FarthestJumpDetector(Handle timer)
 
 public Action Timer_JumpContestOver(Handle timer)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_JumpContest)
 			{
-				int jumptype = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));				
+				int jumptype = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));				
 				switch (jumptype)
 				{
 					case Jump_TheMost:
 					{						
-						int Guard_JumpCount = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData));
-						int Prisoner_JumpCount = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData));
+						int Guard_JumpCount = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData));
+						int Prisoner_JumpCount = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData));
 						
 						if (Prisoner_JumpCount > Guard_JumpCount)
 						{
@@ -5001,7 +4967,7 @@ public Action Timer_JumpContestOver(Handle timer)
 
 public Action Timer_Beacon(Handle timer)
 {
-	int iNumOfBeacons = GetArraySize(gH_DArray_Beacons);
+	int iNumOfBeacons = gH_DArray_Beacons.Length;
 	if (iNumOfBeacons <= 0)
 	{
 		g_BeaconTimer = null; // TODO: Remove this because it doesn't make sense?
@@ -5016,14 +4982,14 @@ public Action Timer_Beacon(Handle timer)
 	
 	if (gShadow_LR_HelpBeams)
 	{
-		for (int LRindex = 0; LRindex < GetArraySize(gH_DArray_LR_Partners); LRindex++)
+		for (int LRindex = 0; LRindex < gH_DArray_LR_Partners.Length; LRindex++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, LRindex, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(LRindex, view_as<int>(Block_LRType));
 			
 			if (type != LR_Rebel)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, LRindex, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, LRindex, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(LRindex, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(LRindex, view_as<int>(Block_Guard));
 				
 				int clients[2];
 				clients[0] = LR_Player_Prisoner;
@@ -5053,7 +5019,7 @@ public Action Timer_Beacon(Handle timer)
 		int iEntityIndex;
 		for (int idx = 0; idx < iNumOfBeacons; idx++)
 		{
-			iEntityIndex = GetArrayCell(gH_DArray_Beacons, idx);
+			iEntityIndex = gH_DArray_Beacons.Get(idx);
 			if (IsValidEntity(iEntityIndex))
 			{
 				float f_Origin[3];
@@ -5097,7 +5063,7 @@ void AddBeacon(int entityIndex)
 {
 	if (IsValidEntity(entityIndex))
 	{
-		PushArrayCell(gH_DArray_Beacons, entityIndex);
+		gH_DArray_Beacons.Push(entityIndex);
 	}
 	if (g_BeaconTimer == null)
 	{
@@ -5116,13 +5082,13 @@ void RemoveBeacon(int entityIndex)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	bool bIsDodgeball = false;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_Dodgeball)
 			{
 				bIsDodgeball = true;
@@ -5138,13 +5104,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 public void OnEntitySpawned(int entity)
 {
 	int client = GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-			int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+			int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+			int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 			
 			if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 			{
@@ -5176,7 +5142,7 @@ public Action Timer_RemoveFlashbang(Handle timer, any entity)
 
 public Action Timer_Countdown(Handle timer)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize == 0)
 	{
 		g_CountdownTimer = null; // TODO: Remove this because it doesn't make sense?
@@ -5185,34 +5151,34 @@ public Action Timer_Countdown(Handle timer)
 	
 	bool bCountdownUsed = false;
 	
-	for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+	for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 	{
-		LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+		LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 		
 		if (type != LR_Race && type != LR_NoScope && type != LR_JumpContest)
 		{
 			continue;
 		}
 		
-		int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-		int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
-		int countdown = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
+		int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+		int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
+		int countdown = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
 		if (countdown > 0)
 		{
 			bCountdownUsed = true;
 			PrintCenterText(LR_Player_Prisoner, "LR begins in %i...", countdown);
 			PrintCenterText(LR_Player_Guard, "LR begins in %i...", countdown);
-			SetArrayCell(gH_DArray_LR_Partners, idx, --countdown, view_as<int>(Block_Global1));
+			gH_DArray_LR_Partners.Set(idx, --countdown, view_as<int>(Block_Global1));
 			
 			// set up laser beams for race points
 			if (type == LR_Race && gShadow_LR_Race_NotifyCTs)
 			{
 				float LR_Prisoner_Position[3], f_EndLocation[3];
-				Handle PositionPack = GetArrayCell(gH_DArray_LR_Partners, idx, 9);
-				ResetPack(PositionPack);
-				f_EndLocation[0] = ReadPackFloat(PositionPack);
-				f_EndLocation[1] = ReadPackFloat(PositionPack);
-				f_EndLocation[2] = ReadPackFloat(PositionPack);
+				DataPack PositionPack = gH_DArray_LR_Partners.Get(idx, 9);
+				PositionPack.Reset();
+				f_EndLocation[0] = PositionPack.ReadFloat();
+				f_EndLocation[1] = PositionPack.ReadFloat();
+				f_EndLocation[2] = PositionPack.ReadFloat();
 				GetClientAbsOrigin(LR_Player_Prisoner, LR_Prisoner_Position);
 				
 				int clients[2];
@@ -5228,7 +5194,7 @@ public Action Timer_Countdown(Handle timer)
 		else if (countdown == 0)
 		{
 			bCountdownUsed = true;
-			SetArrayCell(gH_DArray_LR_Partners, idx, --countdown, view_as<int>(Block_Global1));	
+			gH_DArray_LR_Partners.Set(idx, --countdown, view_as<int>(Block_Global1));	
 			switch (type)
 			{
 				case LR_Race:
@@ -5246,7 +5212,7 @@ public Action Timer_Countdown(Handle timer)
 				{
 					// grab weapon choice
 					NoScopeWeapon NS_Selection;
-					NS_Selection = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));					
+					NS_Selection = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));					
 					int NSW_Prisoner, NSW_Guard;
 					switch (NS_Selection)
 					{
@@ -5343,25 +5309,25 @@ public Action Timer_Countdown(Handle timer)
 
 public Action Timer_Race(Handle timer)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	bool bIsRace = false;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_Race)
 			{
 				bIsRace = true;
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				float LR_Prisoner_Position[3], LR_Guard_Position[3], f_EndLocation[3];
-				Handle PositionPack = GetArrayCell(gH_DArray_LR_Partners, idx, 9);
-				ResetPack(PositionPack);
-				f_EndLocation[0] = ReadPackFloat(PositionPack);
-				f_EndLocation[1] = ReadPackFloat(PositionPack);
-				f_EndLocation[2] = ReadPackFloat(PositionPack);
+				DataPack PositionPack = gH_DArray_LR_Partners.Get(idx, 9);
+				PositionPack.Reset();
+				f_EndLocation[0] = PositionPack.ReadFloat();
+				f_EndLocation[1] = PositionPack.ReadFloat();
+				f_EndLocation[2] = PositionPack.ReadFloat();
 				GetClientAbsOrigin(LR_Player_Prisoner, LR_Prisoner_Position);
 				GetClientAbsOrigin(LR_Player_Guard, LR_Guard_Position);
 				// check how close they are to the end point
@@ -5398,32 +5364,32 @@ public Action Timer_Race(Handle timer)
 	return Plugin_Continue;
 }
 
-public int RPSmenuHandler(Handle menu, MenuAction action, int client, int param2)
+public int RPSmenuHandler(Menu menu, MenuAction action, int client, int param2)
 {
 	if (action == MenuAction_Select)
 	{
 		// find out which LR this is for
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_RockPaperScissors)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));	
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));	
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
-					int RPS_Prisoner_Choice = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
-					int RPS_Guard_Choice = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
+					int RPS_Prisoner_Choice = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
+					int RPS_Guard_Choice = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
 					
 					if (client == LR_Player_Prisoner)
 					{
 						RPS_Prisoner_Choice = param2;
-						SetArrayCell(gH_DArray_LR_Partners, idx, RPS_Prisoner_Choice, 5);
+						gH_DArray_LR_Partners.Set(idx, RPS_Prisoner_Choice, 5);
 					}
 					else if (client == LR_Player_Guard)
 					{
 						RPS_Guard_Choice = param2;
-						SetArrayCell(gH_DArray_LR_Partners, idx, RPS_Guard_Choice, view_as<int>(Block_Global2));
+						gH_DArray_LR_Partners.Set(idx, RPS_Guard_Choice, view_as<int>(Block_Global2));
 					}
 					
 					if ((RPS_Guard_Choice != -1) && (RPS_Prisoner_Choice != -1))
@@ -5493,37 +5459,37 @@ public int RPSmenuHandler(Handle menu, MenuAction action, int client, int param2
 							}
 							
 							// redo menu
-							SetArrayCell(gH_DArray_LR_Partners, idx, -1, view_as<int>(Block_Global1));
-							SetArrayCell(gH_DArray_LR_Partners, idx, -1, view_as<int>(Block_Global2));
-							Handle rpsmenu1 = CreateMenu(RPSmenuHandler);
-							SetMenuTitle(rpsmenu1, "%T", "Rock Paper Scissors", LR_Player_Prisoner);
-							SetArrayCell(gH_DArray_LR_Partners, idx, rpsmenu1, view_as<int>(Block_PrisonerData));
+							gH_DArray_LR_Partners.Set(idx, -1, view_as<int>(Block_Global1));
+							gH_DArray_LR_Partners.Set(idx, -1, view_as<int>(Block_Global2));
+							Menu rpsmenu1 = new Menu(RPSmenuHandler);
+							rpsmenu1.SetTitle("%T", "Rock Paper Scissors", LR_Player_Prisoner);
+							gH_DArray_LR_Partners.Set(idx, rpsmenu1, view_as<int>(Block_PrisonerData));
 				
 							char r1[32], p1[64], s1[64];
 							Format(r1, sizeof(r1), "%T", "Rock", LR_Player_Prisoner);
 							Format(p1, sizeof(p1), "%T", "Paper", LR_Player_Prisoner);
 							Format(s1, sizeof(s1), "%T", "Scissors", LR_Player_Prisoner);
-							AddMenuItem(rpsmenu1, "0", r1);
-							AddMenuItem(rpsmenu1, "1", p1);
-							AddMenuItem(rpsmenu1, "2", s1);
+							rpsmenu1.AddItem("0", r1);
+							rpsmenu1.AddItem("1", p1);
+							rpsmenu1.AddItem("2", s1);
 				
-							SetMenuExitButton(rpsmenu1, true);
-							DisplayMenu(rpsmenu1, LR_Player_Prisoner, 15);
+							rpsmenu1.ExitButton = true;
+							rpsmenu1.Display(LR_Player_Prisoner, 15);
 				
-							Handle rpsmenu2 = CreateMenu(RPSmenuHandler);
-							SetMenuTitle(rpsmenu2, "%T", "Rock Paper Scissors", LR_Player_Guard);
-							SetArrayCell(gH_DArray_LR_Partners, idx, rpsmenu2, view_as<int>(Block_GuardData));
+							Menu rpsmenu2 = new Menu(RPSmenuHandler);
+							rpsmenu2.SetTitle("%T", "Rock Paper Scissors", LR_Player_Guard);
+							gH_DArray_LR_Partners.Set(idx, rpsmenu2, view_as<int>(Block_GuardData));
 				
 							char r2[32], p2[64], s2[64];
 							Format(r2, sizeof(r2), "%T", "Rock", LR_Player_Guard);
 							Format(p2, sizeof(p2), "%T", "Paper", LR_Player_Guard);
 							Format(s2, sizeof(s2), "%T", "Scissors", LR_Player_Guard);
-							AddMenuItem(rpsmenu2, "0", r2);
-							AddMenuItem(rpsmenu2, "1", p2);
-							AddMenuItem(rpsmenu2, "2", s2);
+							rpsmenu2.AddItem("0", r2);
+							rpsmenu2.AddItem("1", p2);
+							rpsmenu2.AddItem("2", s2);
 				
-							SetMenuExitButton(rpsmenu2, true);
-							DisplayMenu(rpsmenu2, LR_Player_Guard, 15);
+							rpsmenu2.ExitButton = true;
+							rpsmenu2.Display(LR_Player_Guard, 15);
 						}
 						// check if guard wins
 						// Rock beats Scissors, Paper beats Rock, Scissors beats Paper
@@ -5546,13 +5512,13 @@ public int RPSmenuHandler(Handle menu, MenuAction action, int client, int param2
 	}
 	else if (action == MenuAction_Cancel)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_RockPaperScissors)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));	
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));	
 				if (client == LR_Player_Prisoner || client == LR_Player_Guard)
 				{
 					if (IsClientInGame(client) && IsPlayerAlive(client))
@@ -5573,7 +5539,7 @@ public int RPSmenuHandler(Handle menu, MenuAction action, int client, int param2
 	}
 	else if (action == MenuAction_End)
 	{
-		CloseHandle(menu);
+		delete menu;
 	}
 }
 
@@ -5581,18 +5547,18 @@ public Action Timer_DodgeballCheckCheaters(Handle timer)
 {
 	// is there still a gun toss LR going on?
 	bool bDodgeball = false;
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_Dodgeball)
 			{
 				bDodgeball = true;
 				
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				if (IsValidEntity(LR_Player_Prisoner) && (GetClientHealth(LR_Player_Prisoner) > 1))
 				{
@@ -5617,19 +5583,19 @@ public Action Timer_DodgeballCheckCheaters(Handle timer)
 
 public Action Timer_HotPotatoDone(Handle timer, any HotPotato_ID)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
-			int thisHotPotato_ID = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));			
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
+			int thisHotPotato_ID = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));			
 			if ((type == LR_HotPotato) && (HotPotato_ID == thisHotPotato_ID))
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
-				int HPloser = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
+				int HPloser = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
 				int HPwinner = ((HPloser == LR_Player_Prisoner) ? LR_Player_Guard : LR_Player_Prisoner);
 				
 				KillAndReward(HPloser, HPwinner);
@@ -5647,18 +5613,18 @@ public Action Timer_HotPotatoDone(Handle timer, any HotPotato_ID)
 
 public Action Timer_ChickenFight(Handle timer)
 {
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	bool bIsChickenFight = false;
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_ChickenFight)
 			{
 				bIsChickenFight = true;
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				int p1EntityBelow = GetEntDataEnt2(LR_Player_Prisoner, g_Offset_GroundEnt);
 				int p2EntityBelow = GetEntDataEnt2(LR_Player_Guard, g_Offset_GroundEnt);
 				
@@ -5719,50 +5685,50 @@ public Action Timer_GunToss(Handle timer)
 {
 	// is there still a gun toss LR going on?
 	int iNumGunTosses = 0;
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	
 	char sHintTextGlobal[200];
 	
 	if (iArraySize > 0)
 	{
-		for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+		for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 		{	
-			LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+			LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 			if (type == LR_GunToss)
 			{
 				iNumGunTosses++;
 				
 				int GTp1done, GTp2done, GTp1dropped, GTp2dropped, GTdeagle1, GTdeagle2;
-				GTp1done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global3));
-				GTp2done = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global4));
-				GTp1dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
-				GTp2dropped = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global2));
-				GTdeagle1 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_PrisonerData)));
-				GTdeagle2 = EntRefToEntIndex(GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_GuardData)));
+				GTp1done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global3));
+				GTp2done = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global4));
+				GTp1dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
+				GTp2dropped = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global2));
+				GTdeagle1 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_PrisonerData)));
+				GTdeagle2 = EntRefToEntIndex(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_GuardData)));
 				float GTdeagle1pos[3], GTdeagle2pos[3];
 				float GTdeagle1lastpos[3], GTdeagle2lastpos[3];
-				Handle PositionDataPack = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_DataPackHandle));
-				ResetPack(PositionDataPack);
-				GTdeagle1lastpos[0] = ReadPackFloat(PositionDataPack);
-				GTdeagle1lastpos[1] = ReadPackFloat(PositionDataPack);
-				GTdeagle1lastpos[2] = ReadPackFloat(PositionDataPack);
-				GTdeagle2lastpos[0] = ReadPackFloat(PositionDataPack);
-				GTdeagle2lastpos[1] = ReadPackFloat(PositionDataPack);
-				GTdeagle2lastpos[2] = ReadPackFloat(PositionDataPack);
+				DataPack PositionDataPack = view_as<DataPack>(gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_DataPackHandle)));
+				PositionDataPack.Reset();
+				GTdeagle1lastpos[0] = PositionDataPack.ReadFloat();
+				GTdeagle1lastpos[1] = PositionDataPack.ReadFloat();
+				GTdeagle1lastpos[2] = PositionDataPack.ReadFloat();
+				GTdeagle2lastpos[0] = PositionDataPack.ReadFloat();
+				GTdeagle2lastpos[1] = PositionDataPack.ReadFloat();
+				GTdeagle2lastpos[2] = PositionDataPack.ReadFloat();
 				float GTp1droppos[3], GTp2droppos[3];
-				GTp1droppos[0] = ReadPackFloat(PositionDataPack);
-				GTp1droppos[1] = ReadPackFloat(PositionDataPack);
-				GTp1droppos[2] = ReadPackFloat(PositionDataPack);
-				GTp2droppos[0] = ReadPackFloat(PositionDataPack);
-				GTp2droppos[1] = ReadPackFloat(PositionDataPack);
-				GTp2droppos[2] = ReadPackFloat(PositionDataPack);
+				GTp1droppos[0] = PositionDataPack.ReadFloat();
+				GTp1droppos[1] = PositionDataPack.ReadFloat();
+				GTp1droppos[2] = PositionDataPack.ReadFloat();
+				GTp2droppos[0] = PositionDataPack.ReadFloat();
+				GTp2droppos[1] = PositionDataPack.ReadFloat();
+				GTp2droppos[2] = PositionDataPack.ReadFloat();
 				float GTp1jumppos[3], GTp2jumppos[3];
-				GTp1jumppos[0] = ReadPackFloat(PositionDataPack);
-				GTp1jumppos[1] = ReadPackFloat(PositionDataPack);
-				GTp1jumppos[2] = ReadPackFloat(PositionDataPack);
-				GTp2jumppos[0] = ReadPackFloat(PositionDataPack);
-				GTp2jumppos[1] = ReadPackFloat(PositionDataPack);
-				GTp2jumppos[2] = ReadPackFloat(PositionDataPack);
+				GTp1jumppos[0] = PositionDataPack.ReadFloat();
+				GTp1jumppos[1] = PositionDataPack.ReadFloat();
+				GTp1jumppos[2] = PositionDataPack.ReadFloat();
+				GTp2jumppos[0] = PositionDataPack.ReadFloat();
+				GTp2jumppos[1] = PositionDataPack.ReadFloat();
+				GTp2jumppos[2] = PositionDataPack.ReadFloat();
 				
 				if(IsValidEntity(GTdeagle1))
 				{
@@ -5772,7 +5738,7 @@ public Action Timer_GunToss(Handle timer)
 						if (GetVectorDistance(GTdeagle1lastpos, GTdeagle1pos) < 3.00)
 						{
 							GTp1done = true;
-							SetArrayCell(gH_DArray_LR_Partners, idx, GTp1done, view_as<int>(Block_Global3));
+							gH_DArray_LR_Partners.Set(idx, GTp1done, view_as<int>(Block_Global3));
 						}
 						else
 						{
@@ -5780,12 +5746,12 @@ public Action Timer_GunToss(Handle timer)
 							GTdeagle1lastpos[1] = GTdeagle1pos[1];
 							GTdeagle1lastpos[2] = GTdeagle1pos[2];
 							#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-								SetPackPosition(PositionDataPack, view_as<DataPackPos>(0));
+								PositionDataPack.Position = view_as<DataPackPos>(0);
 							#else
-								SetPackPosition(PositionDataPack, 0);
+								PositionDataPack.Position = 0;
 							#endif
-							WritePackFloat(PositionDataPack, GTdeagle1lastpos[1]);
-							WritePackFloat(PositionDataPack, GTdeagle1lastpos[2]);
+							PositionDataPack.WriteFloat(GTdeagle1lastpos[1]);
+							PositionDataPack.WriteFloat(GTdeagle1lastpos[2]);
 						}
 					}
 					else if (GTp1dropped && GTp1done)
@@ -5819,7 +5785,7 @@ public Action Timer_GunToss(Handle timer)
 						if (GetVectorDistance(GTdeagle2lastpos, GTdeagle2pos) < 3.00)
 						{
 							GTp2done = true;
-							SetArrayCell(gH_DArray_LR_Partners, idx, GTp2done, view_as<int>(Block_Global4));						
+							gH_DArray_LR_Partners.Set(idx, GTp2done, view_as<int>(Block_Global4));						
 						}
 						else
 						{
@@ -5828,13 +5794,13 @@ public Action Timer_GunToss(Handle timer)
 							GTdeagle2lastpos[2] = GTdeagle2pos[2];
 	
 							#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-								SetPackPosition(PositionDataPack, view_as<DataPackPos>(24));
+								PositionDataPack.Position = view_as<DataPackPos>(24);
 							#else
-								SetPackPosition(PositionDataPack, 24);
+								PositionDataPack.Position = 24;
 							#endif
-							WritePackFloat(PositionDataPack, GTdeagle2lastpos[0]);
-							WritePackFloat(PositionDataPack, GTdeagle2lastpos[1]);
-							WritePackFloat(PositionDataPack, GTdeagle2lastpos[2]);
+							PositionDataPack.WriteFloat(GTdeagle2lastpos[0]);
+							PositionDataPack.WriteFloat(GTdeagle2lastpos[1]);
+							PositionDataPack.WriteFloat(GTdeagle2lastpos[2]);
 						}
 					}
 					else if (GTp2dropped && GTp2done)
@@ -5883,8 +5849,8 @@ public Action Timer_GunToss(Handle timer)
 						f_PrisonerDistance = 0.0;
 					}
 
-					int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-					int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+					int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+					int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 					if (!gShadow_SendGlobalMsgs)
 					{
 						if (g_Game == Game_CSS)
@@ -5944,7 +5910,7 @@ void DecideRebelsFate(int rebeller, int LRIndex, int victim = 0)
 	
 	// grab the current LR and override default rebel action if requested (backward compatibility)
 	int rebelAction;	
-	LastRequest type = GetArrayCell(gH_DArray_LR_Partners, LRIndex, view_as<int>(Block_LRType));
+	LastRequest type = gH_DArray_LR_Partners.Get(LRIndex, view_as<int>(Block_LRType));
 	switch (type)
 	{
 		case LR_KnifeFight:
@@ -6042,22 +6008,22 @@ public Action Timer_BeerGoggles(Handle timer)
 	float vecPunch[3];
 	float drunkMultiplier = float(gShadow_LR_KnifeFight_Drunk);
 	
-	int iArraySize = GetArraySize(gH_DArray_LR_Partners);
+	int iArraySize = gH_DArray_LR_Partners.Length;
 	if (iArraySize == 0)
 	{
 		g_BeerGogglesTimer = null;
 		return Plugin_Stop;
 	}
-	for (int idx = 0; idx < GetArraySize(gH_DArray_LR_Partners); idx++)
+	for (int idx = 0; idx < gH_DArray_LR_Partners.Length; idx++)
 	{
-		LastRequest type = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_LRType));
+		LastRequest type = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_LRType));
 		if (type == LR_KnifeFight)
 		{
-			KnifeType KnifeChoice = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Global1));
+			KnifeType KnifeChoice = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Global1));
 			if (KnifeChoice == Knife_Drunk)
 			{
-				int LR_Player_Prisoner = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Prisoner));
-				int LR_Player_Guard = GetArrayCell(gH_DArray_LR_Partners, idx, view_as<int>(Block_Guard));
+				int LR_Player_Prisoner = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Prisoner));
+				int LR_Player_Guard = gH_DArray_LR_Partners.Get(idx, view_as<int>(Block_Guard));
 				
 				switch (timerCount % 4)
 				{

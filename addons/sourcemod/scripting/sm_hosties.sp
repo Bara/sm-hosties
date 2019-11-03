@@ -319,9 +319,6 @@ public void OnConfigsExecuted()
 	#if (MODULE_MUTE == 1)
 	MutePrisoners_OnConfigsExecuted();
 	#endif
-	#if (MODULE_CHECKPLAYERS == 1)
-	CheckPlayers_OnConfigsExecuted();
-	#endif
 	#if (MODULE_GAMEDESCRIPTION == 1)
 	GameDesc_OnConfigsExecuted();
 	#endif
