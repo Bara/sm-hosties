@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v1
 
     - name: Create build folder
-      run: mkdir build/${{ matrix.SM_VERSION }}/
+      run: mkdir -p build/${{ matrix.SM_VERSION }}/
 
     - name: Move hosties files into a build folder
       run: cp addons materials sound LICENSE build/${{ matrix.SM_VERSION }}/
@@ -32,7 +32,7 @@ jobs:
       run: chmod +x addons/sourcemod/scripting/spcomp
 
     - name: Create plugins folder
-      run: mkdir build/${{ matrix.SM_VERSION }}/addons/sourcemod/plugins
+      run: mkdir -p build/${{ matrix.SM_VERSION }}/addons/sourcemod/plugins
 
     - name: Compile sm_hosties.sp
       run: addons/sourcemod/scripting/spcomp -w234 -O2 -v2 -obuild/${{ matrix.SM_VERSION }}/addons/sourcemod/plugins/sm_hosties.smx build/${{ matrix.SM_VERSION }}/addons/sourcemod/scripting/sm_hosties.sp 
