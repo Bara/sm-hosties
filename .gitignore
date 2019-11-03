@@ -25,7 +25,6 @@ addons/sourcemod/scripting/funcommands.sp
 addons/sourcemod/scripting/funcommands/
 addons/sourcemod/scripting/funvotes.sp
 addons/sourcemod/scripting/funvotes/
-addons/sourcemod/scripting/include/SteamWorks.inc
 addons/sourcemod/scripting/include/admin.inc
 addons/sourcemod/scripting/include/adminmenu.inc
 addons/sourcemod/scripting/include/adt.inc
@@ -45,7 +44,6 @@ addons/sourcemod/scripting/include/core.inc
 addons/sourcemod/scripting/include/cstrike.inc
 addons/sourcemod/scripting/include/datapack.inc
 addons/sourcemod/scripting/include/dbi.inc
-addons/sourcemod/scripting/include/emitsoundany.inc
 addons/sourcemod/scripting/include/entity.inc
 addons/sourcemod/scripting/include/entity_prop_stocks.inc
 addons/sourcemod/scripting/include/events.inc

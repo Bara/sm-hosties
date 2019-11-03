@@ -21,9 +21,7 @@ jobs:
     - uses: actions/checkout@v1
     
     - name: Download sourcemod
-      run: |
-        wget "http://www.sourcemod.net/latest.php?version=${{ matrix.SM_VERSION }}&os=linux" -O sourcemod.tar.gz
-        tar -xzf sourcemod.tar.gz --exclude='addons/sourcemod/translations'
+      run: wget "http://www.sourcemod.net/latest.php?version=${{ matrix.SM_VERSION }}&os=linux" -O sourcemod.tar.gz
       
     - name: Give spcomp the required permissions
       run: chmod +x addons/sourcemod/scripting/spcomp
