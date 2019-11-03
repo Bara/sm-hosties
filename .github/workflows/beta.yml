@@ -1,0 +1,32 @@
+name: Compile with SourceMod
+
+on:
+  push:
+    branches: beta
+  pull_request:
+    branches: beta
+
+env:
+  PL_VERSION: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        SM_VERSION: ['1.10', '1.11']
+
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Download sourcemod
+      run: |
+        wget "http://www.sourcemod.net/latest.php?version=${{ matrix.SM_VERSION }}&os=linux" -O sourcemod.tar.gz
+        tar -xzf sourcemod.tar.gz --exclude='addons/sourcemod/translations'
+      
+    - name: Give spcomp the required permissions
+      run: chmod +x addons/sourcemod/scripting/spcomp
+
+    - name: Compile sm_hosties.sp
+      run: addons/sourcemod/scripting/spcomp -w234 -O2 -v2 addons/sourcemod/scripting/sm_hosties.sp
